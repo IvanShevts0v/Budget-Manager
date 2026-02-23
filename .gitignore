@@ -1,0 +1,8 @@
+target
+*.txt
+.env
+venv
+*.py
+*.docx
+*.docx#
+uploads
