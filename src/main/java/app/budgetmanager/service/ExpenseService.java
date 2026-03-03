@@ -1,7 +1,6 @@
 package app.budgetmanager.service;
 
 import app.budgetmanager.dto.ExpenseResponseDto;
-import app.budgetmanager.entity.Expense;
 import app.budgetmanager.mapper.ExpenseMapper;
 import app.budgetmanager.repository.ExpenseRepository;
 import org.springframework.stereotype.Service;
@@ -47,3 +46,4 @@ public class ExpenseService {
                 .map(expenseMapper::toDto);
     }
 }
+
