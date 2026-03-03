@@ -1,39 +1,27 @@
-# Budget Manager
+# Менеджер бюджета — Spring Boot REST API
 
-Expense tracking system — Spring Boot REST API.
+1. Создано Spring Boot приложение.
+2. Реализован REST API для сущности Expense (тема «Менеджер бюджета»).
+3. Реализованы:
+   - GET-эндпоинт с @RequestParam для поиска по любому полю Expense;
+   - GET-эндпоинт с @PathVariable для получения по id.
+4. Реализованы слои: Controller → Service → Repository.
+5. Реализованы DTO и маппер между сущностью и ответом API.
+6. Настроен Checkstyle, код приведён к Google style.
 
-## Lab Works
+## Запуск
 
-### Lab 1 — Basic REST Service
-- Spring Boot application
-- REST API for **Expense** entity
-- GET with `@PathVariable` and `@RequestParam`
-- Layers: Controller → Service → Repository
-- DTO + Mapper (MapStruct/Custom)
-- Checkstyle
+Команда для запуска приложения:
 
-## Entities
-
-### Expense
-| Field | Type | Description |
-|-------|------|-------------|
-| id | Long | PK, auto-generated |
-| amount | BigDecimal | Amount |
-| date | LocalDate | Expense date |
-| description | String | Description |
-| *relations* | | Category |
-
-### Other entities
-- **Category**: Expense category (Food, Transport, etc.)
-- **Budget**: Spending limit per category/period
-
-## Run
-
-### Requirements
-- Docker & Docker Compose
-- Java 17+
-- Maven
-
-### Quick start (Docker)
 ```bash
-docker-compose up --build
+mvn spring-boot:run
+```
+
+## Сборка и проверка кода
+
+Сборка проекта и проверка стиля кода (Checkstyle):
+
+```bash
+mvn clean install
+mvn checkstyle:check
+```
