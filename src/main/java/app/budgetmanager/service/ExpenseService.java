@@ -38,7 +38,7 @@ public class ExpenseService {
                         || expense.getCategory().equalsIgnoreCase(category))
                 .filter(expense -> date == null || expense.getDate().equals(date))
                 .map(expenseMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public Optional<ExpenseResponseDto> findById(Long id) {
@@ -46,4 +46,5 @@ public class ExpenseService {
                 .map(expenseMapper::toDto);
     }
 }
+
 
