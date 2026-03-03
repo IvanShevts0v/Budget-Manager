@@ -12,16 +12,6 @@ Expense tracking system — Spring Boot REST API.
 - DTO + Mapper (MapStruct/Custom)
 - Checkstyle
 
-### Lab 2 — JPA (Hibernate / Spring Data)
-- PostgreSQL via Docker Compose
-- Entities and relationships:
-  - **Many-to-One**: Expense → Category
-  - **One-to-Many**: Category → Expenses
-  - **Many-to-One**: Budget → Category (optional)
-- CRUD for all entities
-- N+1 solution (`@EntityGraph`, `JOIN FETCH`)
-- Transaction demo (`@Transactional`, rollback)
-
 ## Entities
 
 ### Expense
