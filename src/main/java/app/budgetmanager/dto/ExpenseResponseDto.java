@@ -3,15 +3,6 @@ package app.budgetmanager.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class ExpenseResponseDto {
 
     private Long id;
@@ -19,4 +10,55 @@ public class ExpenseResponseDto {
     private BigDecimal amount;
     private String category;
     private LocalDate date;
+
+    public ExpenseResponseDto() {
+    }
+
+    public ExpenseResponseDto(Long id, String description, BigDecimal amount, String category, LocalDate date) {
+        this.id = id;
+        this.description = description;
+        this.amount = amount;
+        this.category = category;
+        this.date = date;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
 }
