@@ -11,12 +11,12 @@ public class ExpenseMapper {
         if (expense == null) {
             return null;
         }
-        ExpenseResponseDto dto = new ExpenseResponseDto();
-        dto.setId(expense.getId());
-        dto.setDescription(expense.getDescription());
-        dto.setAmount(expense.getAmount());
-        dto.setCategory(expense.getCategory());
-        dto.setDate(expense.getDate());
-        return dto;
+        return new ExpenseResponseDto(
+                expense.getId(),
+                expense.getDescription(),
+                expense.getAmount(),
+                expense.getCategory(),
+                expense.getDate()
+        );
     }
 }

@@ -1,23 +1,65 @@
-# Менеджер бюджета — Spring Boot REST API
+# Менеджер бюджета (Budget Manager) — REST API
 
-1. Создано Spring Boot приложение.
-2. Реализован REST API для сущности Expense (тема «Менеджер бюджета»).
-3. Реализованы:
-   - GET-эндпоинт с @RequestParam для поиска по любому полю Expense;
-   - GET-эндпоинт с @PathVariable для получения по id.
-4. Реализованы слои: Controller → Service → Repository.
-5. Реализованы DTO и маппер между сущностью и ответом API.
-6. Настроен Checkstyle, код приведён к Google style.
+Проект представляет собой Spring Boot REST API для учёта расходов. Приложение хранит записи о расходах в базе (по умолчанию H2 в памяти) и позволяет получать их через HTTP-эндпоинты.
 
-## Запуск
+## Возможности
 
-Команда для запуска приложения:
+- Просмотр списка расходов с фильтрацией по любым полям сущности `Expense`:
+  - `GET /api/expenses?id=&description=&amount=&category=&date=YYYY-MM-DD`
+- Получение расхода по идентификатору:
+  - `GET /api/expenses/{id}`
+- Архитектура приложения разделена на слои `Controller -> Service -> Repository`.
+- Используются DTO и маппер (`ExpenseResponseDto` и `ExpenseMapper`) для преобразования сущности в формат ответа API.
+
+## Технологии
+
+- Java 21
+- Spring Boot
+- Spring Web (REST)
+- Spring Data JPA (Hibernate)
+- H2 Database (in-memory)
+- Maven
+
+## Модель данных
+
+В проекте используется основная сущность:
+
+- **`Expense`** — расход пользователя.
+
+Таблица: `expenses`
+
+Поля сущности:
+
+- `id` — первичный ключ (генерируется автоматически)
+- `description` — описание расхода (обязательное)
+- `amount` — сумма расхода (обязательное, `precision = 19`, `scale = 2`)
+- `category` — категория расхода (обязательное)
+- `date` — дата расхода (обязательное)
+
+## API (кратко)
+
+Фильтрация в `GET /api/expenses` работает через необязательные query-параметры. Для даты используется формат ISO (`YYYY-MM-DD`).
+
+## Качество кода
+
+- Checkstyle настроен через Maven plugin и конфигурацию `checkstyle.xml` (код приводится к стилю, близкому к Google Java Style).
+- SonarCloud: https://sonarcloud.io/project/overview?id=IvanShevts0v_Budget-Manager
+
+## Настройка и окружение
+
+В `application.yml` включена H2 консоль, а также задано создание схемы на старте приложения:
+
+- `spring.datasource.url=jdbc:h2:mem:budgetdb`
+- `spring.jpa.hibernate.ddl-auto=create-drop`
+- `server.port=8080`
+
+## Сборка и запуск
+
+Запуск приложения:
 
 ```bash
 mvn spring-boot:run
 ```
-
-## Сборка и проверка кода
 
 Сборка проекта и проверка стиля кода (Checkstyle):
 
