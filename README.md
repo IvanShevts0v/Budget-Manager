@@ -36,13 +36,13 @@
 - `category` — категория расхода (обязательное)
 - `date` — дата расхода (обязательное)
 
-## API (кратко)
+## API
 
 Фильтрация в `GET /api/expenses` работает через необязательные query-параметры. Для даты используется формат ISO (`YYYY-MM-DD`).
 
 ## Качество кода
 
-- Checkstyle настроен через Maven plugin и конфигурацию `checkstyle.xml` (код приводится к стилю, близкому к Google Java Style).
+- Checkstyle настроен через Maven plugin и конфигурацию `checkstyle.xml`
 - SonarCloud: https://sonarcloud.io/project/overview?id=IvanShevts0v_Budget-Manager
 
 ## Настройка и окружение
