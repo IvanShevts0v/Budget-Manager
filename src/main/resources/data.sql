@@ -2,9 +2,11 @@ TRUNCATE TABLE expense_tags, expenses, wallets, tags, categories, users RESTART 
 
 INSERT INTO users (username) VALUES ('demo');
 
-INSERT INTO categories (name) VALUES ('food'), ('transport'), ('entertainment');
+INSERT INTO categories (name)
+SELECT unnest(ARRAY['food', 'transport', 'entertainment']::text[]);
 
-INSERT INTO tags (name) VALUES ('essential'), ('recurring'), ('leisure');
+INSERT INTO tags (name)
+SELECT unnest(ARRAY['essential', 'recurring', 'leisure']::text[]);
 
 INSERT INTO wallets (name, user_id)
 SELECT 'Main', id FROM users WHERE username = 'demo';
@@ -22,10 +24,10 @@ FROM (VALUES
 
 INSERT INTO expense_tags (expense_id, tag_id)
 SELECT e.id, t.id
-FROM expenses e
-         CROSS JOIN tags t
-WHERE (e.description, t.name) IN (
-    ('Coffee', 'essential'),
-    ('Netflix', 'recurring'),
-    ('Lunch', 'essential')
-);
+FROM (VALUES
+          ('Coffee', 'essential'),
+          ('Netflix', 'recurring'),
+          ('Lunch', 'essential')
+     ) AS pairs(exp_descr, tag_name)
+         JOIN expenses e ON e.description = pairs.exp_descr
+         JOIN tags t ON t.name = pairs.tag_name;

@@ -23,6 +23,7 @@ public abstract class AbstractNamedEntity {
      * Конструктор без аргументов требуется JPA/Hibernate.
      */
     protected AbstractNamedEntity() {
+        // required by JPA; fields initialized by Hibernate
     }
 
     protected AbstractNamedEntity(Long id, String name) {

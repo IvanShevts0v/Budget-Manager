@@ -39,6 +39,7 @@ public class User {
     private List<Wallet> wallets = new ArrayList<>();
 
     public User() {
+        // required by JPA; fields initialized by Hibernate
     }
 
     public User(Long id, String username) {

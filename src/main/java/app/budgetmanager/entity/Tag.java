@@ -19,6 +19,7 @@ public class Tag extends AbstractNamedEntity {
     private Set<Expense> expenses = new HashSet<>();
 
     public Tag() {
+        // required by JPA; fields initialized by Hibernate
     }
 
     public Tag(Long id, String name) {

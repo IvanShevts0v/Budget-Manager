@@ -63,6 +63,7 @@ public class Expense {
      * Конструктор без аргументов требуется JPA/Hibernate.
      */
     public Expense() {
+        // required by JPA; fields initialized by Hibernate
     }
 
     public Long getId() {

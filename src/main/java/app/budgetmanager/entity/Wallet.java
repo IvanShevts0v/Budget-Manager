@@ -48,6 +48,7 @@ public class Wallet {
      * Конструктор без аргументов требуется JPA/Hibernate.
      */
     public Wallet() {
+        // required by JPA; fields initialized by Hibernate
     }
 
     public Long getId() {

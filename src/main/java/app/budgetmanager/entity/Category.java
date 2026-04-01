@@ -19,6 +19,7 @@ public class Category extends AbstractNamedEntity {
     private List<Expense> expenses = new ArrayList<>();
 
     public Category() {
+        // required by JPA; fields initialized by Hibernate
     }
 
     public Category(Long id, String name) {
