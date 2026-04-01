@@ -44,6 +44,9 @@ public class Wallet {
     )
     private List<Expense> expenses = new ArrayList<>();
 
+    /**
+     * Конструктор без аргументов требуется JPA/Hibernate.
+     */
     public Wallet() {
     }
 

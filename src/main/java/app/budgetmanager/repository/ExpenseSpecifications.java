@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Условия выборки расходов на стороне БД (без загрузки всей таблицы в память).
@@ -31,27 +32,64 @@ public final class ExpenseSpecifications {
             LocalDate date
     ) {
         return (Root<Expense> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
-            if (query != null) {
-                query.distinct(true);
-            }
+            applyDistinct(query);
             List<Predicate> predicates = new ArrayList<>();
-            if (id != null) {
-                predicates.add(cb.equal(root.get("id"), id));
-            }
-            if (description != null && !description.isEmpty()) {
-                predicates.add(cb.equal(cb.lower(root.get("description")), description.toLowerCase()));
-            }
-            if (amount != null) {
-                predicates.add(cb.equal(root.get("amount"), amount));
-            }
-            if (category != null && !category.isEmpty()) {
-                Join<Expense, Category> catJoin = root.join("category", JoinType.INNER);
-                predicates.add(cb.equal(cb.lower(catJoin.get("name")), category.toLowerCase()));
-            }
-            if (date != null) {
-                predicates.add(cb.equal(root.get("date"), date));
-            }
+            predicateById(root, cb, id).ifPresent(predicates::add);
+            predicateByDescription(root, cb, description).ifPresent(predicates::add);
+            predicateByAmount(root, cb, amount).ifPresent(predicates::add);
+            predicateByCategoryName(root, cb, category).ifPresent(predicates::add);
+            predicateByDate(root, cb, date).ifPresent(predicates::add);
             return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    private static void applyDistinct(CriteriaQuery<?> query) {
+        if (query != null) {
+            query.distinct(true);
+        }
+    }
+
+    private static Optional<Predicate> predicateById(Root<Expense> root, CriteriaBuilder cb, Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return Optional.of(cb.equal(root.get("id"), id));
+    }
+
+    private static Optional<Predicate> predicateByDescription(
+            Root<Expense> root,
+            CriteriaBuilder cb,
+            String description
+    ) {
+        if (description == null || description.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(cb.equal(cb.lower(root.get("description")), description.toLowerCase()));
+    }
+
+    private static Optional<Predicate> predicateByAmount(Root<Expense> root, CriteriaBuilder cb, BigDecimal amount) {
+        if (amount == null) {
+            return Optional.empty();
+        }
+        return Optional.of(cb.equal(root.get("amount"), amount));
+    }
+
+    private static Optional<Predicate> predicateByCategoryName(
+            Root<Expense> root,
+            CriteriaBuilder cb,
+            String category
+    ) {
+        if (category == null || category.isEmpty()) {
+            return Optional.empty();
+        }
+        Join<Expense, Category> catJoin = root.join("category", JoinType.INNER);
+        return Optional.of(cb.equal(cb.lower(catJoin.get("name")), category.toLowerCase()));
+    }
+
+    private static Optional<Predicate> predicateByDate(Root<Expense> root, CriteriaBuilder cb, LocalDate date) {
+        if (date == null) {
+            return Optional.empty();
+        }
+        return Optional.of(cb.equal(root.get("date"), date));
     }
 }

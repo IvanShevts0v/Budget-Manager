@@ -10,33 +10,22 @@ INSERT INTO wallets (name, user_id)
 SELECT 'Main', id FROM users WHERE username = 'demo';
 
 INSERT INTO expenses (description, amount, date, wallet_id, category_id)
-SELECT 'Coffee', 150.00, DATE '2025-03-01', w.id, c.id
-FROM wallets w, categories c
-WHERE w.name = 'Main' AND c.name = 'food';
-
-INSERT INTO expenses (description, amount, date, wallet_id, category_id)
-SELECT 'Bus ticket', 50.00, DATE '2025-03-01', w.id, c.id
-FROM wallets w, categories c
-WHERE w.name = 'Main' AND c.name = 'transport';
-
-INSERT INTO expenses (description, amount, date, wallet_id, category_id)
-SELECT 'Lunch', 350.00, DATE '2025-03-02', w.id, c.id
-FROM wallets w, categories c
-WHERE w.name = 'Main' AND c.name = 'food';
-
-INSERT INTO expenses (description, amount, date, wallet_id, category_id)
-SELECT 'Netflix', 699.00, DATE '2025-03-02', w.id, c.id
-FROM wallets w, categories c
-WHERE w.name = 'Main' AND c.name = 'entertainment';
+SELECT v.descr, v.amt, v.d, w.id, c.id
+FROM (VALUES
+          ('Coffee', 150.00::numeric, DATE '2025-03-01', 'food'),
+          ('Bus ticket', 50.00::numeric, DATE '2025-03-01', 'transport'),
+          ('Lunch', 350.00::numeric, DATE '2025-03-02', 'food'),
+          ('Netflix', 699.00::numeric, DATE '2025-03-02', 'entertainment')
+     ) AS v(descr, amt, d, cat_name)
+         JOIN wallets w ON w.name = 'Main'
+         JOIN categories c ON c.name = v.cat_name;
 
 INSERT INTO expense_tags (expense_id, tag_id)
-SELECT e.id, t.id FROM expenses e, tags t
-WHERE e.description = 'Coffee' AND t.name = 'essential';
-
-INSERT INTO expense_tags (expense_id, tag_id)
-SELECT e.id, t.id FROM expenses e, tags t
-WHERE e.description = 'Netflix' AND t.name = 'recurring';
-
-INSERT INTO expense_tags (expense_id, tag_id)
-SELECT e.id, t.id FROM expenses e, tags t
-WHERE e.description = 'Lunch' AND t.name = 'essential';
+SELECT e.id, t.id
+FROM expenses e
+         CROSS JOIN tags t
+WHERE (e.description, t.name) IN (
+    ('Coffee', 'essential'),
+    ('Netflix', 'recurring'),
+    ('Lunch', 'essential')
+);

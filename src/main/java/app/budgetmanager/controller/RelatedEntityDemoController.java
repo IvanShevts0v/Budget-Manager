@@ -16,6 +16,12 @@ import java.util.Map;
 @RequestMapping("/api/demo/related-save")
 public class RelatedEntityDemoController {
 
+    private static final String KEY_MODE = "mode";
+    private static final String KEY_SUCCESS = "success";
+    private static final String KEY_MESSAGE = "message";
+    private static final String KEY_ERROR = "error";
+    private static final String KEY_HINT = "hint";
+
     private final RelatedEntitySaveDemoService demoService;
 
     public RelatedEntityDemoController(RelatedEntitySaveDemoService demoService) {
@@ -30,16 +36,16 @@ public class RelatedEntityDemoController {
         try {
             demoService.saveUserAndWalletPartialCommit(request);
             return ResponseEntity.ok(Map.of(
-                    "mode", "partial",
-                    "success", true,
-                    "message", "User и Wallet сохранены"
+                    KEY_MODE, "partial",
+                    KEY_SUCCESS, true,
+                    KEY_MESSAGE, "User и Wallet сохранены"
             ));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                    "mode", "partial",
-                    "success", false,
-                    "error", e.getMessage(),
-                    "hint",
+                    KEY_MODE, "partial",
+                    KEY_SUCCESS, false,
+                    KEY_ERROR, e.getMessage(),
+                    KEY_HINT,
                     "Без @Transactional на сервисе каждый save уже закоммичен: проверьте users и wallets"
             ));
         }
@@ -53,16 +59,16 @@ public class RelatedEntityDemoController {
         try {
             demoService.saveUserAndWalletFullRollback(request);
             return ResponseEntity.ok(Map.of(
-                    "mode", "transactional",
-                    "success", true,
-                    "message", "User и Wallet сохранены в одной транзакции"
+                    KEY_MODE, "transactional",
+                    KEY_SUCCESS, true,
+                    KEY_MESSAGE, "User и Wallet сохранены в одной транзакции"
             ));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                    "mode", "transactional",
-                    "success", false,
-                    "error", e.getMessage(),
-                    "hint", "С @Transactional на сервисе вся операция откатилась, записей в БД не должно быть"
+                    KEY_MODE, "transactional",
+                    KEY_SUCCESS, false,
+                    KEY_ERROR, e.getMessage(),
+                    KEY_HINT, "С @Transactional на сервисе вся операция откатилась, записей в БД не должно быть"
             ));
         }
     }

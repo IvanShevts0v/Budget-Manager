@@ -59,6 +59,9 @@ public class Expense {
     )
     private Set<Tag> tags = new HashSet<>();
 
+    /**
+     * Конструктор без аргументов требуется JPA/Hibernate.
+     */
     public Expense() {
     }
 
