@@ -1,13 +1,20 @@
 package app.budgetmanager.controller;
 
+import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.service.ExpenseService;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -42,5 +49,25 @@ public class ExpenseController {
         return expenseService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Expense not found"));
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ExpenseResponseDto create(@Valid @RequestBody ExpenseRequestDto request) {
+        return expenseService.create(request);
+    }
+
+    @PutMapping("/{id}")
+    public ExpenseResponseDto update(
+            @PathVariable Long id,
+            @Valid @RequestBody ExpenseRequestDto request
+    ) {
+        return expenseService.update(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        expenseService.deleteById(id);
     }
 }
