@@ -1,6 +1,9 @@
 package app.budgetmanager.dto;
 
-public class CategoryResponseDto {
+/**
+ * Ответ API для сущностей с полями {@code id} и {@code name} (категории, теги).
+ */
+public class NamedResponseDto {
 
     private Long id;
     private String name;

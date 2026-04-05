@@ -1,7 +1,7 @@
 package app.budgetmanager.service;
 
+import app.budgetmanager.dto.NamedResponseDto;
 import app.budgetmanager.dto.TagDto;
-import app.budgetmanager.dto.TagResponseDto;
 import app.budgetmanager.mapper.TagMapper;
 import app.budgetmanager.model.entity.Tag;
 import app.budgetmanager.repository.TagRepository;
@@ -22,28 +22,28 @@ public class TagService {
         this.mapper = mapper;
     }
 
-    public TagResponseDto getById(Long id) {
-        return mapper.toTagResponseDto(tagRepository.findById(id).orElseThrow());
+    public NamedResponseDto getById(Long id) {
+        return mapper.toNamedResponseDto(tagRepository.findById(id).orElseThrow());
     }
 
-    public TagResponseDto getByName(String name) {
+    public NamedResponseDto getByName(String name) {
         Tag tag = tagRepository.findByName(name);
         if (tag == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tag not found");
         }
-        return mapper.toTagResponseDto(tag);
+        return mapper.toNamedResponseDto(tag);
     }
 
-    public TagResponseDto save(TagDto tagDto) {
-        return mapper.toTagResponseDto(tagRepository.save(mapper.toTag(tagDto)));
+    public NamedResponseDto save(TagDto tagDto) {
+        return mapper.toNamedResponseDto(tagRepository.save(mapper.toTag(tagDto)));
     }
 
     public void delete(Long id) {
         tagRepository.deleteById(id);
     }
 
-    public List<TagResponseDto> getAll() {
-        return tagRepository.findAll().stream().map(mapper::toTagResponseDto).toList();
+    public List<NamedResponseDto> getAll() {
+        return tagRepository.findAll().stream().map(mapper::toNamedResponseDto).toList();
     }
 
     public Tag getEntityById(Long id) {

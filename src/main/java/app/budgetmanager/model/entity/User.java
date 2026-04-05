@@ -32,7 +32,11 @@ public class User {
     )
     private List<Wallet> wallets = new ArrayList<>();
 
+    /**
+     * Требуется JPA/Hibernate для создания экземпляра сущности (рефлексия, прокси).
+     */
     public User() {
+        /* intentionally empty */
     }
 
     public Long getId() {

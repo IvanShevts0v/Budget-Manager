@@ -15,7 +15,11 @@ public class Category extends AbstractNamedEntity {
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<Expense> expenses = new ArrayList<>();
 
+    /**
+     * Требуется JPA/Hibernate для создания экземпляра сущности (рефлексия, прокси).
+     */
     public Category() {
+        /* intentionally empty */
     }
 
     public Category(Long id, String name) {

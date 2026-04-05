@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import app.budgetmanager.dto.NamedResponseDto;
 import app.budgetmanager.dto.TagDto;
-import app.budgetmanager.dto.TagResponseDto;
 import app.budgetmanager.service.TagService;
 
 @RestController
@@ -26,22 +26,22 @@ public class TagController {
     }
 
     @GetMapping
-    public List<TagResponseDto> getAll() {
+    public List<NamedResponseDto> getAll() {
         return tagService.getAll();
     }
 
     @GetMapping("/by-name")
-    public TagResponseDto getByName(@RequestParam String name) {
+    public NamedResponseDto getByName(@RequestParam String name) {
         return tagService.getByName(name);
     }
 
     @GetMapping("/{id}")
-    public TagResponseDto getById(@PathVariable Long id) {
+    public NamedResponseDto getById(@PathVariable Long id) {
         return tagService.getById(id);
     }
 
     @PostMapping
-    public TagResponseDto create(@RequestBody TagDto dto) {
+    public NamedResponseDto create(@RequestBody TagDto dto) {
         return tagService.save(dto);
     }
 

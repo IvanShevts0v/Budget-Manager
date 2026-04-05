@@ -1,7 +1,7 @@
 package app.budgetmanager.service;
 
 import app.budgetmanager.dto.CategoryRequestDto;
-import app.budgetmanager.dto.CategoryResponseDto;
+import app.budgetmanager.dto.NamedResponseDto;
 import app.budgetmanager.mapper.CategoryMapper;
 import app.budgetmanager.model.entity.Category;
 import app.budgetmanager.repository.CategoryRepository;
@@ -22,46 +22,47 @@ public class CategoryService {
         this.mapper = mapper;
     }
 
-    public CategoryResponseDto getById(Long id) {
-        return mapper.toCategoryResponseDto(categoryRepository.findById(id).orElseThrow());
+    public NamedResponseDto getById(Long id) {
+        return mapper.toNamedResponseDto(categoryRepository.findById(id).orElseThrow());
     }
 
-    public CategoryResponseDto getByNameExact(String name) {
+    public NamedResponseDto getByNameExact(String name) {
         List<Category> found = categoryRepository.findByName(name);
         if (found.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
         }
-        return mapper.toCategoryResponseDto(found.get(0));
+        return mapper.toNamedResponseDto(found.get(0));
     }
 
-    public List<CategoryResponseDto> getByName(String name) {
-        return categoryRepository.findByName(name).stream().map(mapper::toCategoryResponseDto).toList();
+    public List<NamedResponseDto> getByName(String name) {
+        return categoryRepository.findByName(name).stream().map(mapper::toNamedResponseDto).toList();
     }
 
-    public CategoryResponseDto save(Category category) {
-        return mapper.toCategoryResponseDto(categoryRepository.save(category));
+    public NamedResponseDto create(CategoryRequestDto dto) {
+        Category category = mapper.toCategory(dto);
+        return mapper.toNamedResponseDto(categoryRepository.save(category));
     }
 
     public void delete(Long id) {
         categoryRepository.deleteById(id);
     }
 
-    public List<CategoryResponseDto> getAll() {
-        return categoryRepository.findAll().stream().map(mapper::toCategoryResponseDto).toList();
+    public List<NamedResponseDto> getAll() {
+        return categoryRepository.findAll().stream().map(mapper::toNamedResponseDto).toList();
     }
 
-    public CategoryResponseDto update(Long id, CategoryRequestDto dto) {
+    public NamedResponseDto update(Long id, CategoryRequestDto dto) {
         Category category = categoryRepository.findById(id).orElseThrow();
         category.setName(dto.getName());
-        return mapper.toCategoryResponseDto(categoryRepository.save(category));
+        return mapper.toNamedResponseDto(categoryRepository.save(category));
     }
 
-    public CategoryResponseDto patch(Long id, CategoryRequestDto dto) {
+    public NamedResponseDto patch(Long id, CategoryRequestDto dto) {
         Category category = categoryRepository.findById(id).orElseThrow();
         if (dto.getName() != null) {
             category.setName(dto.getName());
         }
-        return mapper.toCategoryResponseDto(categoryRepository.save(category));
+        return mapper.toNamedResponseDto(categoryRepository.save(category));
     }
 
     public Category getEntityById(Long id) {

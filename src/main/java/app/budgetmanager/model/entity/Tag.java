@@ -15,7 +15,11 @@ public class Tag extends AbstractNamedEntity {
     @ManyToMany(mappedBy = "tags", fetch = FetchType.LAZY)
     private Set<Expense> expenses = new HashSet<>();
 
+    /**
+     * Требуется JPA/Hibernate для создания экземпляра сущности (рефлексия, прокси).
+     */
     public Tag() {
+        /* intentionally empty */
     }
 
     public Tag(Long id, String name) {

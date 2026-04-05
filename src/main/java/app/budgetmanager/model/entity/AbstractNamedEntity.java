@@ -16,7 +16,11 @@ public abstract class AbstractNamedEntity {
     @Column(nullable = false, unique = true)
     private String name;
 
+    /**
+     * Требуется JPA/Hibernate для наследников сущности.
+     */
     protected AbstractNamedEntity() {
+        /* intentionally empty */
     }
 
     protected AbstractNamedEntity(Long id, String name) {

@@ -6,7 +6,7 @@
 
 - **Пользователи:** `GET /users/all`, `GET /users/{id}`, `POST /users/register` (создаёт пользователя и кошелёк по умолчанию), `PATCH /users/{id}/change-user-information`, `DELETE /users/{id}`.
 - **Кошельки:** `GET /wallets`, `GET /wallets?userId=`, `GET /wallets/{id}`, `POST /wallets`, `PATCH /wallets/{id}/name/{name}`, `DELETE /wallets/{id}`.
-- **Категории и теги:** CRUD по путям `/categories` и `/tags` (аналогично справочникам в учебном примере).
+- **Категории и теги:** CRUD по путям `/categories` и `/tags`; ответы категорий и тегов — DTO `NamedResponseDto` (`id`, `name`). Создание категории: `POST /categories` с телом `{"name":"..."}` (`CategoryRequestDto`).
 - **Расходы:** `GET /expenses` (опционально `senderUserId` или фильтры `id`, `description`, `amount`, `category`, `date`), `GET /expenses/{id}`, `POST /expenses`, `POST /expenses/no-transactional` (два шага сохранения без внешней транзакции — демонстрация частичного коммита при ошибке на тегах), `PUT /expenses/{id}`, `DELETE /expenses/{id}`.
 - Слои **Controller → Service → Repository**, DTO в виде JavaBean, маппинг **MapStruct** (`mapper` + сущности в `model.entity`).
 

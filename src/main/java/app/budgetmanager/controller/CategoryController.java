@@ -14,8 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.budgetmanager.dto.CategoryRequestDto;
-import app.budgetmanager.dto.CategoryResponseDto;
-import app.budgetmanager.model.entity.Category;
+import app.budgetmanager.dto.NamedResponseDto;
 import app.budgetmanager.service.CategoryService;
 
 @RestController
@@ -29,28 +28,28 @@ public class CategoryController {
     }
 
     @GetMapping
-    public List<CategoryResponseDto> getAll() {
+    public List<NamedResponseDto> getAll() {
         return categoryService.getAll();
     }
 
     @GetMapping("/by-name/exact")
-    public CategoryResponseDto getByNameExact(@RequestParam String name) {
+    public NamedResponseDto getByNameExact(@RequestParam String name) {
         return categoryService.getByNameExact(name);
     }
 
     @GetMapping("/by-name")
-    public List<CategoryResponseDto> getByName(@RequestParam String name) {
+    public List<NamedResponseDto> getByName(@RequestParam String name) {
         return categoryService.getByName(name);
     }
 
     @GetMapping("/{id}")
-    public CategoryResponseDto getById(@PathVariable Long id) {
+    public NamedResponseDto getById(@PathVariable Long id) {
         return categoryService.getById(id);
     }
 
     @PostMapping
-    public CategoryResponseDto create(@RequestBody Category category) {
-        return categoryService.save(category);
+    public NamedResponseDto create(@RequestBody CategoryRequestDto dto) {
+        return categoryService.create(dto);
     }
 
     @DeleteMapping("/{id}")
@@ -59,12 +58,12 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
-    public CategoryResponseDto putCategory(@PathVariable Long id, @RequestBody CategoryRequestDto dto) {
+    public NamedResponseDto putCategory(@PathVariable Long id, @RequestBody CategoryRequestDto dto) {
         return categoryService.update(id, dto);
     }
 
     @PatchMapping("/{id}")
-    public CategoryResponseDto patchCategory(@PathVariable Long id, @RequestBody CategoryRequestDto dto) {
+    public NamedResponseDto patchCategory(@PathVariable Long id, @RequestBody CategoryRequestDto dto) {
         return categoryService.patch(id, dto);
     }
 }
