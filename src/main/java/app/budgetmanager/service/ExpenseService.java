@@ -2,11 +2,11 @@ package app.budgetmanager.service;
 
 import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
-import app.budgetmanager.entity.Category;
-import app.budgetmanager.entity.Expense;
-import app.budgetmanager.entity.Tag;
-import app.budgetmanager.entity.Wallet;
 import app.budgetmanager.mapper.ExpenseMapper;
+import app.budgetmanager.model.entity.Category;
+import app.budgetmanager.model.entity.Expense;
+import app.budgetmanager.model.entity.Tag;
+import app.budgetmanager.model.entity.Wallet;
 import app.budgetmanager.repository.CategoryRepository;
 import app.budgetmanager.repository.ExpenseRepository;
 import app.budgetmanager.repository.ExpenseSpecifications;
@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -58,57 +57,84 @@ public class ExpenseService {
         return expenseRepository
                 .findAll(ExpenseSpecifications.matchesFilter(id, description, amount, category, date))
                 .stream()
-                .map(expenseMapper::toDto)
+                .map(expenseMapper::toExpenseResponseDto)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public Optional<ExpenseResponseDto> findById(Long id) {
+    public List<ExpenseResponseDto> getAll() {
+        return expenseRepository.findAll().stream().map(expenseMapper::toExpenseResponseDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExpenseResponseDto> getBySenderUserId(Long senderUserId) {
+        return expenseRepository.findByWalletOwnerUserId(senderUserId).stream()
+                .map(expenseMapper::toExpenseResponseDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ExpenseResponseDto getById(Long id) {
         return expenseRepository.findByIdWithAssociations(id)
-                .map(expenseMapper::toDto);
+                .map(expenseMapper::toExpenseResponseDto)
+                .orElseThrow();
     }
 
     @Transactional
     public ExpenseResponseDto create(ExpenseRequestDto request) {
-        Wallet wallet = walletRepository.findById(request.walletId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Wallet not found"));
-        Category category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Category not found"));
-        Set<Tag> tags = resolveTags(request.tagIds());
+        requirePositiveAmount(request.getAmount());
+        Wallet wallet = walletRepository.findById(request.getWalletId()).orElseThrow();
+        Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
+        Set<Tag> tags = resolveTags(request.getTagIds());
 
         Expense expense = new Expense();
-        expense.setDescription(request.description());
-        expense.setAmount(request.amount());
-        expense.setDate(request.date());
+        expense.setDescription(request.getDescription());
+        expense.setAmount(request.getAmount());
+        expense.setDate(request.getDate());
         expense.setWallet(wallet);
         expense.setCategory(category);
         expense.setTags(new HashSet<>(tags));
 
         Expense saved = expenseRepository.save(expense);
         return expenseRepository.findByIdWithAssociations(saved.getId())
-                .map(expenseMapper::toDto)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Failed to load created expense"));
+                .map(expenseMapper::toExpenseResponseDto)
+                .orElseThrow();
+    }
+
+    public ExpenseResponseDto createWithoutTransactional(ExpenseRequestDto dto) {
+        requirePositiveAmount(dto.getAmount());
+        Wallet wallet = walletRepository.findById(dto.getWalletId()).orElseThrow();
+        Category category = categoryRepository.findById(dto.getCategoryId()).orElseThrow();
+
+        Expense expense = new Expense();
+        expense.setDescription(dto.getDescription());
+        expense.setAmount(dto.getAmount());
+        expense.setDate(dto.getDate());
+        expense.setWallet(wallet);
+        expense.setCategory(category);
+        expense.setTags(new HashSet<>());
+        Expense saved = expenseRepository.save(expense);
+
+        Set<Tag> tags = resolveTags(dto.getTagIds());
+        saved.getTags().addAll(tags);
+        expenseRepository.save(saved);
+
+        return expenseRepository.findByIdWithAssociations(saved.getId())
+                .map(expenseMapper::toExpenseResponseDto)
+                .orElseThrow();
     }
 
     @Transactional
     public ExpenseResponseDto update(Long id, ExpenseRequestDto request) {
-        Expense expense = expenseRepository.findByIdWithAssociations(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Expense not found"));
-        Wallet wallet = walletRepository.findById(request.walletId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Wallet not found"));
-        Category category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Category not found"));
-        Set<Tag> newTags = resolveTags(request.tagIds());
+        requirePositiveAmount(request.getAmount());
+        Expense expense = expenseRepository.findByIdWithAssociations(id).orElseThrow();
+        Wallet wallet = walletRepository.findById(request.getWalletId()).orElseThrow();
+        Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
+        Set<Tag> newTags = resolveTags(request.getTagIds());
 
-        expense.setDescription(request.description());
-        expense.setAmount(request.amount());
-        expense.setDate(request.date());
+        expense.setDescription(request.getDescription());
+        expense.setAmount(request.getAmount());
+        expense.setDate(request.getDate());
         expense.setWallet(wallet);
         expense.setCategory(category);
         expense.getTags().clear();
@@ -116,17 +142,19 @@ public class ExpenseService {
 
         expenseRepository.save(expense);
         return expenseRepository.findByIdWithAssociations(id)
-                .map(expenseMapper::toDto)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Failed to load updated expense"));
+                .map(expenseMapper::toExpenseResponseDto)
+                .orElseThrow();
     }
 
     @Transactional
-    public void deleteById(Long id) {
-        if (!expenseRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Expense not found");
-        }
+    public void delete(Long id) {
         expenseRepository.deleteById(id);
+    }
+
+    private static void requirePositiveAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Incorrect amount");
+        }
     }
 
     private Set<Tag> resolveTags(List<Long> tagIds) {

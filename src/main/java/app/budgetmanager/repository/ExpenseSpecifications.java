@@ -1,7 +1,7 @@
 package app.budgetmanager.repository;
 
-import app.budgetmanager.entity.Category;
-import app.budgetmanager.entity.Expense;
+import app.budgetmanager.model.entity.Category;
+import app.budgetmanager.model.entity.Expense;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
@@ -16,9 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Условия выборки расходов на стороне БД (без загрузки всей таблицы в память).
- */
 public final class ExpenseSpecifications {
 
     private ExpenseSpecifications() {

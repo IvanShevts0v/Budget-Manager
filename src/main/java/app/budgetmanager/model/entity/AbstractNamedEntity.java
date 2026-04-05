@@ -1,4 +1,4 @@
-package app.budgetmanager.entity;
+package app.budgetmanager.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
@@ -6,9 +6,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 
-/**
- * Общие поля справочников с уникальным именем (категория, тег).
- */
 @MappedSuperclass
 public abstract class AbstractNamedEntity {
 
@@ -19,11 +16,7 @@ public abstract class AbstractNamedEntity {
     @Column(nullable = false, unique = true)
     private String name;
 
-    /**
-     * Конструктор без аргументов требуется JPA/Hibernate.
-     */
     protected AbstractNamedEntity() {
-        // required by JPA; fields initialized by Hibernate
     }
 
     protected AbstractNamedEntity(Long id, String name) {

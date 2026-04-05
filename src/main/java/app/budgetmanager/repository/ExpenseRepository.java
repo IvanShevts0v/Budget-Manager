@@ -1,6 +1,6 @@
 package app.budgetmanager.repository;
 
-import app.budgetmanager.entity.Expense;
+import app.budgetmanager.model.entity.Expense;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,9 +13,10 @@ import java.util.Optional;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpecificationExecutor<Expense> {
 
-    /**
-     * Фильтрация в БД + тот же граф, что и для одной сущности (без N+1).
-     */
+    @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
+    @Override
+    List<Expense> findAll();
+
     @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
     @Override
     List<Expense> findAll(Specification<Expense> spec);
@@ -23,4 +24,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
     @Query("SELECT DISTINCT e FROM Expense e WHERE e.id = :id")
     Optional<Expense> findByIdWithAssociations(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
+    @Query("SELECT e FROM Expense e WHERE e.wallet.user.id = :userId")
+    List<Expense> findByWalletOwnerUserId(@Param("userId") Long userId);
 }

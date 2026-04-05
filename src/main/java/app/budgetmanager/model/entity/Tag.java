@@ -1,4 +1,4 @@
-package app.budgetmanager.entity;
+package app.budgetmanager.model.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,14 +12,10 @@ import java.util.Set;
 @Table(name = "tags")
 public class Tag extends AbstractNamedEntity {
 
-    /**
-     * Обратная сторона ManyToMany; LAZY; владелец связи — Expense.tags, каскад не используется.
-     */
     @ManyToMany(mappedBy = "tags", fetch = FetchType.LAZY)
     private Set<Expense> expenses = new HashSet<>();
 
     public Tag() {
-        // required by JPA; fields initialized by Hibernate
     }
 
     public Tag(Long id, String name) {

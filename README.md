@@ -4,100 +4,87 @@
 
 ## Возможности
 
-- Просмотр списка расходов с фильтрацией по любым полям сущности `Expense`:
-  - `GET /api/expenses?id=&description=&amount=&category=&date=YYYY-MM-DD`
-- Получение расхода по идентификатору:
-  - `GET /api/expenses/{id}`
-- CRUD для расходов (`Expense`):
-  - создание — `POST /api/expenses` (тело JSON, см. ниже);
-  - обновление — `PUT /api/expenses/{id}` (полная замена полей);
-  - удаление — `DELETE /api/expenses/{id}` (ответ `204 No Content`).
-- Архитектура приложения разделена на слои `Controller -> Service -> Repository`.
-- Используются DTO и маппер (`ExpenseResponseDto` и `ExpenseMapper`) для преобразования сущности в формат ответа API.
-- В доменной модели не менее пяти сущностей; есть связи **OneToMany** (`User` → `Wallet`, `Wallet` → `Expense`, `Category` → `Expense`) и **ManyToMany** (`Expense` ↔ `Tag` через таблицу `expense_tags`).
-- Демо транзакций: `POST /api/demo/related-save/partial` и `POST /api/demo/related-save/transactional` (тело `username`, `walletName`, `failAfterWallet`) — без `@Transactional` на сервисе возможен частичный коммит; с `@Transactional` при ошибке выполняется полный откат. Для каждого вызова используйте **новый уникальный** `username` (ограничение уникальности в БД).
+- **Пользователи:** `GET /users/all`, `GET /users/{id}`, `POST /users/register` (создаёт пользователя и кошелёк по умолчанию), `PATCH /users/{id}/change-user-information`, `DELETE /users/{id}`.
+- **Кошельки:** `GET /wallets`, `GET /wallets?userId=`, `GET /wallets/{id}`, `POST /wallets`, `PATCH /wallets/{id}/name/{name}`, `DELETE /wallets/{id}`.
+- **Категории и теги:** CRUD по путям `/categories` и `/tags` (аналогично справочникам в учебном примере).
+- **Расходы:** `GET /expenses` (опционально `senderUserId` или фильтры `id`, `description`, `amount`, `category`, `date`), `GET /expenses/{id}`, `POST /expenses`, `POST /expenses/no-transactional` (два шага сохранения без внешней транзакции — демонстрация частичного коммита при ошибке на тегах), `PUT /expenses/{id}`, `DELETE /expenses/{id}`.
+- Слои **Controller → Service → Repository**, DTO в виде JavaBean, маппинг **MapStruct** (`mapper` + сущности в `model.entity`).
+
+В доменной модели есть связи **OneToMany** (`User` → `Wallet`, `Wallet` → `Expense`, `Category` → `Expense`) и **ManyToMany** (`Expense` ↔ `Tag` через `expense_tags`).
 
 ## Технологии
 
 - Java 21
 - Spring Boot
-- Spring Web (REST)
-- Spring Data JPA (Hibernate)
+- Spring Web, Spring Data JPA
+- MapStruct
 - PostgreSQL
 - Maven
 
 ## Модель данных
 
-Основные сущности:
+- **`User`** — пользователь (`username`); кошельки **OneToMany** → `Wallet`.
+- **`Wallet`** — кошелёк; владелец **ManyToOne** ← `User`; расходы **OneToMany** → `Expense`.
+- **`Category`**, **`Tag`** — справочники (наследник `AbstractNamedEntity` с полем `name`).
+- **`Expense`** — расход: кошелёк, категория, сумма, дата, описание, теги.
 
-- **`User`** — пользователь; имеет несколько кошельков (**OneToMany** → `Wallet`).
-- **`Wallet`** — кошелёк/счёт; принадлежит пользователю (**ManyToOne** ← `User`), содержит много расходов (**OneToMany** → `Expense`).
-- **`Category`** — категория расхода; к одной категории относится много расходов (**OneToMany** → `Expense`).
-- **`Expense`** — расход; привязан к кошельку и категории (**ManyToOne**); может иметь несколько тегов (**ManyToMany** ↔ `Tag`).
-- **`Tag`** — тег для классификации; связан с расходами через таблицу **`expense_tags`**.
-
-В ответе API поле `category` — это **имя** сущности `Category`. Дополнительно возвращаются `walletId`, `userId` (владелец кошелька) и список имён тегов `tags`.
+В ответе API поле `category` — **имя** категории; также `walletId`, `userId`, список имён тегов `tags`.
 
 ### FetchType и CascadeType
 
-| Связь | FetchType | CascadeType | Зачем |
-|-------|-----------|-------------|--------|
-| `User` → `Wallet` | `LAZY` на коллекции | `PERSIST`, `MERGE`, `REMOVE` + `orphanRemoval` | Кошельки — часть агрегата пользователя; не тянем все кошельки без запроса; удаление пользователя удаляет кошельки. |
-| `Wallet` → `User` | `LAZY` | нет | Владелец подгружается по необходимости. |
-| `Wallet` → `Expense` | `LAZY` на коллекции | `PERSIST`, `MERGE`, `REMOVE` + `orphanRemoval` | Расходы принадлежат кошельку; удаление кошелька удаляет расходы. |
-| `Expense` → `Wallet`, `Category` | `LAZY` | нет | Связи задаются в сервисе; справочник `Category` не каскадится. |
-| `Expense` ↔ `Tag` | `LAZY` | нет | Теги общие; в коде подставляются по id. |
-| `Category` → `Expense`, `Tag` → `Expense` | `LAZY` | нет | Обратные коллекции без каскада. |
+| Связь | FetchType | CascadeType |
+|-------|-----------|-------------|
+| `User` → `Wallet` | `LAZY` | `PERSIST`, `MERGE`, `REMOVE`, `orphanRemoval` |
+| `Wallet` → `Expense` | `LAZY` | `PERSIST`, `MERGE`, `REMOVE`, `orphanRemoval` |
+| `Expense` → `Wallet`, `Category` | `LAZY` | нет |
+| `Expense` ↔ `Tag` | `LAZY` | нет |
 
-Чтобы при выборке списка расходов не возникала проблема **N+1**, в `ExpenseRepository` для `findAll(Specification)` и `findByIdWithAssociations` задан **`@EntityGraph`** (`category`, `tags`, `wallet`, `wallet.user`). Фильтры для `GET /api/expenses` строятся в [`ExpenseSpecifications`](src/main/java/app/budgetmanager/repository/ExpenseSpecifications.java) и выполняются **в БД**, а не перебором всей таблицы в памяти. Чтение в сервисе помечено `@Transactional(readOnly = true)`.
+Для списков расходов в `ExpenseRepository` задан **`@EntityGraph`**, фильтры — в [`ExpenseSpecifications`](src/main/java/app/budgetmanager/repository/ExpenseSpecifications.java).
 
 ## API
 
-Фильтрация в `GET /api/expenses` работает через необязательные query-параметры (условия комбинируются через `AND` в одном запросе). Для даты используется формат ISO (`YYYY-MM-DD`).
+Регистрация (`POST /users/register`):
 
-Скрипт `data.sql` при старте очищает и заново наполняет таблицы (`TRUNCATE`) — удобно для разработки; для постоянных данных лучше отключить авто-инициализацию или использовать миграции.
+```json
+{
+  "username": "ivan",
+  "defaultWalletName": "Основной"
+}
+```
 
-Тело запроса для `POST` и `PUT` (JSON):
+Поле `defaultWalletName` необязательно (по умолчанию имя кошелька — `Default`). В ответе — `id`, `username`, `walletIds`.
+
+Тело для `POST`/`PUT` расхода:
 
 ```json
 {
   "description": "Coffee",
   "amount": 150.00,
-  "date": "2025-03-01",
+  "date": "2026-03-01",
   "walletId": 1,
   "categoryId": 1,
   "tagIds": [1, 2]
 }
 ```
 
-Поле `tagIds` можно опустить или передать пустой массив — тегов не будет. Идентификаторы `walletId`, `categoryId`, `tagIds` должны существовать в БД.
+`amount` должно быть **строго больше нуля**. `tagIds` можно опустить или передать `[]`.
+
+**Данные в PostgreSQL** между перезапусками сохраняются; при пустой БД сначала создайте пользователя (`/users/register`), категорию (`POST /categories`) и при необходимости теги.
 
 ## Качество кода
 
-- Checkstyle настроен через Maven plugin и конфигурацию `checkstyle.xml`
+- Checkstyle (`checkstyle.xml`), проверяется только `src/main/java` (без сгенерированных MapStruct-реализаций).
 - SonarCloud: https://sonarcloud.io/project/overview?id=IvanShevts0v_Budget-Manager
 
 ## Настройка и окружение
 
-Пример текущих настроек в `application.yml`:
-
-- `spring.datasource.url=jdbc:postgresql://localhost:5432/budgetdb`
-- `spring.datasource.username=postgres`
-- `spring.datasource.password=${dbpassword}`
-- `spring.jpa.hibernate.ddl-auto=update`
-- `server.port=8080`
-
-Перед запуском убедитесь, что PostgreSQL запущен и создана база `budgetdb`.
+В `application.yml`: PostgreSQL `budgetdb`, `spring.jpa.hibernate.ddl-auto=update`, `server.port=8080`, пароль `${dbpassword}`.
 
 ## Сборка и запуск
-
-Запуск приложения:
 
 ```bash
 mvn spring-boot:run
 ```
-
-Сборка проекта и проверка стиля кода (Checkstyle):
 
 ```bash
 mvn clean install

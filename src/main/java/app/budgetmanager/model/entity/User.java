@@ -1,4 +1,4 @@
-package app.budgetmanager.entity;
+package app.budgetmanager.model.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -24,12 +24,6 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-    /**
-     * Кошельки пользователя: состав (composition) относительно User.
-     * LAZY — не загружаем все кошельки при каждом чтении User.
-     * PERSIST/MERGE/REMOVE — сохранение и удаление кошельков вместе с пользователем;
-     * orphanRemoval — удаление записи Wallet при удалении из коллекции.
-     */
     @OneToMany(
             mappedBy = "user",
             fetch = FetchType.LAZY,
@@ -39,12 +33,6 @@ public class User {
     private List<Wallet> wallets = new ArrayList<>();
 
     public User() {
-        // required by JPA; fields initialized by Hibernate
-    }
-
-    public User(Long id, String username) {
-        this.id = id;
-        this.username = username;
     }
 
     public Long getId() {

@@ -1,4 +1,4 @@
-package app.budgetmanager.entity;
+package app.budgetmanager.model.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,14 +12,10 @@ import java.util.List;
 @Table(name = "categories")
 public class Category extends AbstractNamedEntity {
 
-    /**
-     * Обратная сторона связи; LAZY; без каскада — справочник не «владеет» расходами.
-     */
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<Expense> expenses = new ArrayList<>();
 
     public Category() {
-        // required by JPA; fields initialized by Hibernate
     }
 
     public Category(Long id, String name) {

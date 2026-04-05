@@ -1,4 +1,4 @@
-package app.budgetmanager.entity;
+package app.budgetmanager.model.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -26,16 +26,10 @@ public class Wallet {
     @Column(nullable = false)
     private String name;
 
-    /**
-     * Владелец кошелька. LAZY — владелец подгружается только при обращении.
-     */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /**
-     * Расходы по кошельку: состав относительно Wallet; каскад как у User.wallets.
-     */
     @OneToMany(
             mappedBy = "wallet",
             fetch = FetchType.LAZY,
@@ -44,11 +38,7 @@ public class Wallet {
     )
     private List<Expense> expenses = new ArrayList<>();
 
-    /**
-     * Конструктор без аргументов требуется JPA/Hibernate.
-     */
     public Wallet() {
-        // required by JPA; fields initialized by Hibernate
     }
 
     public Long getId() {

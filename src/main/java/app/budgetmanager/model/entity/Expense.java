@@ -1,4 +1,4 @@
-package app.budgetmanager.entity;
+package app.budgetmanager.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,23 +34,14 @@ public class Expense {
     @Column(nullable = false)
     private LocalDate date;
 
-    /**
-     * Кошелёк, к которому относится расход. LAZY; без каскада на Wallet (управление из сервиса).
-     */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "wallet_id", nullable = false)
     private Wallet wallet;
 
-    /**
-     * Справочная категория. LAZY; без каскада — удаление категории не должно удалять расходы.
-     */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    /**
-     * Теги: общие сущности, LAZY; без CascadeType — теги подгружаются по id в сервисе.
-     */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "expense_tags",
@@ -59,11 +50,7 @@ public class Expense {
     )
     private Set<Tag> tags = new HashSet<>();
 
-    /**
-     * Конструктор без аргументов требуется JPA/Hibernate.
-     */
     public Expense() {
-        // required by JPA; fields initialized by Hibernate
     }
 
     public Long getId() {
