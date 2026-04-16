@@ -45,7 +45,7 @@ public class UserController {
         service.delete(id);
     }
 
-    @PatchMapping("/{id}/change-user-information")
+    @PatchMapping("/{id}")
     public UserResponseDto changeUserInformation(@PathVariable Long id, @RequestBody UserRequestDto dto) {
         return service.patch(id, dto);
     }

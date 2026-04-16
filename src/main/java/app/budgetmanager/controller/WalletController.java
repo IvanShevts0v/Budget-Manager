@@ -49,7 +49,7 @@ public class WalletController {
         walletService.delete(id);
     }
 
-    @PatchMapping("/{id}/name/{name}")
+    @PatchMapping("/{id}")
     public WalletResponseDto rename(@PathVariable Long id, @PathVariable String name) {
         return walletService.updateName(id, name);
     }
