@@ -147,6 +147,40 @@ public class ExpenseService {
     }
 
     @Transactional
+    public ExpenseResponseDto patch(Long id, ExpenseRequestDto request) {
+        Expense expense = expenseRepository.findByIdWithAssociations(id).orElseThrow();
+
+        if (request.getDescription() != null) {
+            expense.setDescription(request.getDescription());
+        }
+        if (request.getAmount() != null) {
+            requirePositiveAmount(request.getAmount());
+            expense.setAmount(request.getAmount());
+        }
+        if (request.getDate() != null) {
+            expense.setDate(request.getDate());
+        }
+        if (request.getWalletId() != null) {
+            Wallet wallet = walletRepository.findById(request.getWalletId()).orElseThrow();
+            expense.setWallet(wallet);
+        }
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
+            expense.setCategory(category);
+        }
+        if (request.getTagIds() != null) {
+            Set<Tag> newTags = resolveTags(request.getTagIds());
+            expense.getTags().clear();
+            expense.getTags().addAll(newTags);
+        }
+
+        expenseRepository.save(expense);
+        return expenseRepository.findByIdWithAssociations(id)
+                .map(expenseMapper::toExpenseResponseDto)
+                .orElseThrow();
+    }
+
+    @Transactional
     public void delete(Long id) {
         expenseRepository.deleteById(id);
     }

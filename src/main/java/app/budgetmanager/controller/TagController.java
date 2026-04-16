@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,6 +44,11 @@ public class TagController {
     @PostMapping
     public NamedResponseDto create(@RequestBody TagDto dto) {
         return tagService.save(dto);
+    }
+
+    @PatchMapping("/{id}")
+    public NamedResponseDto patch(@PathVariable Long id, @RequestBody TagDto dto) {
+        return tagService.patch(id, dto);
     }
 
     @DeleteMapping("/{id}")

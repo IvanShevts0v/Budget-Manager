@@ -38,6 +38,14 @@ public class TagService {
         return mapper.toNamedResponseDto(tagRepository.save(mapper.toTag(tagDto)));
     }
 
+    public NamedResponseDto patch(Long id, TagDto dto) {
+        Tag tag = tagRepository.findById(id).orElseThrow();
+        if (dto.getName() != null) {
+            tag.setName(dto.getName());
+        }
+        return mapper.toNamedResponseDto(tagRepository.save(tag));
+    }
+
     public void delete(Long id) {
         tagRepository.deleteById(id);
     }

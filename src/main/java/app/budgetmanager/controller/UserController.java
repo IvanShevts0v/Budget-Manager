@@ -25,7 +25,7 @@ public class UserController {
         this.service = service;
     }
 
-    @GetMapping("/all")
+    @GetMapping
     public List<UserResponseDto> getAll() {
         return service.getAll();
     }
