@@ -50,7 +50,7 @@ public class WalletController {
     }
 
     @PatchMapping("/{id}")
-    public WalletResponseDto rename(@PathVariable Long id, @PathVariable String name) {
-        return walletService.updateName(id, name);
+    public WalletResponseDto rename(@PathVariable Long id, @RequestBody WalletRequestDto dto) {
+        return walletService.updateName(id, dto.getName());
     }
 }
