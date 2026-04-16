@@ -28,4 +28,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
     @Query("SELECT e FROM Expense e WHERE e.wallet.user.id = :userId")
     List<Expense> findByWalletOwnerUserId(@Param("userId") Long userId);
+
+    @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
+    @Query("SELECT DISTINCT e FROM Expense e JOIN e.tags t WHERE t.id = :tagId")
+    List<Expense> findByTagId(@Param("tagId") Long tagId);
 }
