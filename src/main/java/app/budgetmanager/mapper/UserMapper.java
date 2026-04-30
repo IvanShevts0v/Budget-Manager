@@ -16,6 +16,7 @@ import java.util.List;
 public interface UserMapper {
 
     @Mapping(target = "walletIds", source = "wallets", qualifiedByName = "mapWalletsToIds")
+    @Mapping(target = "walletNames", source = "wallets", qualifiedByName = "mapWalletsToNames")
     UserResponseDto toUserResponseDto(User user);
 
     @Named("mapWalletsToIds")
@@ -24,6 +25,14 @@ public interface UserMapper {
             return Collections.emptyList();
         }
         return wallets.stream().map(Wallet::getId).toList();
+    }
+
+    @Named("mapWalletsToNames")
+    default List<String> mapWalletsToNames(List<Wallet> wallets) {
+        if (wallets == null) {
+            return Collections.emptyList();
+        }
+        return wallets.stream().map(Wallet::getName).toList();
     }
 
     @BeanMapping(ignoreUnmappedSourceProperties = "defaultWalletName")

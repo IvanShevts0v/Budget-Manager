@@ -1,11 +1,20 @@
 package app.budgetmanager.dto;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import java.util.List;
 
+@JsonPropertyOrder({
+    "id",
+    "username",
+    "walletNames",
+    "walletIds"
+})
 public class UserResponseDto {
 
     private Long id;
     private String username;
+    private List<String> walletNames;
     private List<Long> walletIds;
 
     public Long getId() {
@@ -30,5 +39,13 @@ public class UserResponseDto {
 
     public void setWalletIds(List<Long> walletIds) {
         this.walletIds = walletIds;
+    }
+
+    public List<String> getWalletNames() {
+        return walletNames;
+    }
+
+    public void setWalletNames(List<String> walletNames) {
+        this.walletNames = walletNames;
     }
 }

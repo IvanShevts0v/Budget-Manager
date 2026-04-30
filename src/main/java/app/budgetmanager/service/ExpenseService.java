@@ -75,16 +75,14 @@ public class ExpenseService {
 
     @Transactional(readOnly = true)
     public ExpenseResponseDto getById(Long id) {
-        return expenseRepository.findByIdWithAssociations(id)
-                .map(expenseMapper::toExpenseResponseDto)
-                .orElseThrow();
+        return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
     }
 
     @Transactional
     public ExpenseResponseDto create(ExpenseRequestDto request) {
         requirePositiveAmount(request.getAmount());
-        Wallet wallet = walletRepository.findById(request.getWalletId()).orElseThrow();
-        Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
+        Wallet wallet = findWalletById(request.getWalletId());
+        Category category = findCategoryById(request.getCategoryId());
         Set<Tag> tags = resolveTags(request.getTagIds());
 
         Expense expense = new Expense();
@@ -96,15 +94,12 @@ public class ExpenseService {
         expense.setTags(new HashSet<>(tags));
 
         Expense saved = expenseRepository.save(expense);
-        return expenseRepository.findByIdWithAssociations(saved.getId())
-                .map(expenseMapper::toExpenseResponseDto)
-                .orElseThrow();
+        return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(saved.getId()));
     }
 
     public ExpenseResponseDto createWithoutTransactional(ExpenseRequestDto dto) {
-        requirePositiveAmount(dto.getAmount());
-        Wallet wallet = walletRepository.findById(dto.getWalletId()).orElseThrow();
-        Category category = categoryRepository.findById(dto.getCategoryId()).orElseThrow();
+        Wallet wallet = findWalletById(dto.getWalletId());
+        Category category = findCategoryById(dto.getCategoryId());
 
         Expense expense = new Expense();
         expense.setDescription(dto.getDescription());
@@ -115,21 +110,20 @@ public class ExpenseService {
         expense.setTags(new HashSet<>());
         Expense saved = expenseRepository.save(expense);
 
+        requirePositiveAmount(dto.getAmount());
         Set<Tag> tags = resolveTags(dto.getTagIds());
         saved.getTags().addAll(tags);
         expenseRepository.save(saved);
 
-        return expenseRepository.findByIdWithAssociations(saved.getId())
-                .map(expenseMapper::toExpenseResponseDto)
-                .orElseThrow();
+        return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(saved.getId()));
     }
 
     @Transactional
     public ExpenseResponseDto update(Long id, ExpenseRequestDto request) {
         requirePositiveAmount(request.getAmount());
-        Expense expense = expenseRepository.findByIdWithAssociations(id).orElseThrow();
-        Wallet wallet = walletRepository.findById(request.getWalletId()).orElseThrow();
-        Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
+        Expense expense = findExpenseWithAssociations(id);
+        Wallet wallet = findWalletById(request.getWalletId());
+        Category category = findCategoryById(request.getCategoryId());
         Set<Tag> newTags = resolveTags(request.getTagIds());
 
         expense.setDescription(request.getDescription());
@@ -141,14 +135,12 @@ public class ExpenseService {
         expense.getTags().addAll(newTags);
 
         expenseRepository.save(expense);
-        return expenseRepository.findByIdWithAssociations(id)
-                .map(expenseMapper::toExpenseResponseDto)
-                .orElseThrow();
+        return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
     }
 
     @Transactional
     public ExpenseResponseDto patch(Long id, ExpenseRequestDto request) {
-        Expense expense = expenseRepository.findByIdWithAssociations(id).orElseThrow();
+        Expense expense = findExpenseWithAssociations(id);
 
         if (request.getDescription() != null) {
             expense.setDescription(request.getDescription());
@@ -161,11 +153,11 @@ public class ExpenseService {
             expense.setDate(request.getDate());
         }
         if (request.getWalletId() != null) {
-            Wallet wallet = walletRepository.findById(request.getWalletId()).orElseThrow();
+            Wallet wallet = findWalletById(request.getWalletId());
             expense.setWallet(wallet);
         }
         if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
+            Category category = findCategoryById(request.getCategoryId());
             expense.setCategory(category);
         }
         if (request.getTagIds() != null) {
@@ -175,9 +167,7 @@ public class ExpenseService {
         }
 
         expenseRepository.save(expense);
-        return expenseRepository.findByIdWithAssociations(id)
-                .map(expenseMapper::toExpenseResponseDto)
-                .orElseThrow();
+        return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
     }
 
     @Transactional
@@ -200,5 +190,20 @@ public class ExpenseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "One or more tags not found");
         }
         return new HashSet<>(found);
+    }
+
+    private Wallet findWalletById(Long walletId) {
+        return walletRepository.findById(walletId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Wallet not found"));
+    }
+
+    private Category findCategoryById(Long categoryId) {
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+    }
+
+    private Expense findExpenseWithAssociations(Long expenseId) {
+        return expenseRepository.findByIdWithAssociations(expenseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Expense not found"));
     }
 }

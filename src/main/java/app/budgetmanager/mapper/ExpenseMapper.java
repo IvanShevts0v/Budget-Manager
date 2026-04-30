@@ -15,7 +15,9 @@ public interface ExpenseMapper {
 
     @Mapping(target = "category", source = "category.name")
     @Mapping(target = "walletId", source = "wallet.id")
+    @Mapping(target = "walletName", source = "wallet.name")
     @Mapping(target = "userId", source = "wallet.user.id")
+    @Mapping(target = "userName", source = "wallet.user.username")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "tagNamesSorted")
     ExpenseResponseDto toExpenseResponseDto(Expense expense);
 
