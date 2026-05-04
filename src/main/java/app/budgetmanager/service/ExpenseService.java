@@ -98,8 +98,10 @@ public class ExpenseService {
     }
 
     public ExpenseResponseDto createWithoutTransactional(ExpenseRequestDto dto) {
+        requirePositiveAmount(dto.getAmount());
         Wallet wallet = findWalletById(dto.getWalletId());
         Category category = findCategoryById(dto.getCategoryId());
+        Set<Tag> tags = resolveTags(dto.getTagIds());
 
         Expense expense = new Expense();
         expense.setDescription(dto.getDescription());
@@ -107,13 +109,8 @@ public class ExpenseService {
         expense.setDate(dto.getDate());
         expense.setWallet(wallet);
         expense.setCategory(category);
-        expense.setTags(new HashSet<>());
+        expense.setTags(new HashSet<>(tags));
         Expense saved = expenseRepository.save(expense);
-
-        requirePositiveAmount(dto.getAmount());
-        Set<Tag> tags = resolveTags(dto.getTagIds());
-        saved.getTags().addAll(tags);
-        expenseRepository.save(saved);
 
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(saved.getId()));
     }
