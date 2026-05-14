@@ -1,5 +1,6 @@
 package app.budgetmanager.service;
 
+import app.budgetmanager.cache.ExpenseQueryKey;
 import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.mapper.ExpenseMapper;
@@ -12,6 +13,8 @@ import app.budgetmanager.repository.ExpenseRepository;
 import app.budgetmanager.repository.ExpenseSpecifications;
 import app.budgetmanager.repository.TagRepository;
 import app.budgetmanager.repository.WalletRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +22,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -31,6 +36,8 @@ public class ExpenseService {
     private final CategoryRepository categoryRepository;
     private final TagRepository tagRepository;
     private final ExpenseMapper expenseMapper;
+
+    private final Map<ExpenseQueryKey, Page<ExpenseResponseDto>> expenseFilterCache = new HashMap<>();
 
     public ExpenseService(
             ExpenseRepository expenseRepository,
@@ -74,6 +81,28 @@ public class ExpenseService {
     }
 
     @Transactional(readOnly = true)
+    public Page<ExpenseResponseDto> findByWalletOwnerAndCategory(
+            Long walletOwnerUserId,
+            String categoryName,
+            Pageable pageable,
+            boolean useNative
+    ) {
+        String normalizedCategoryName = normalize(categoryName);
+        ExpenseQueryKey key = new ExpenseQueryKey(walletOwnerUserId, normalizedCategoryName, pageable, useNative);
+        synchronized (expenseFilterCache) {
+            return expenseFilterCache.computeIfAbsent(
+                    key,
+                    k -> (useNative
+                            ? expenseRepository.findAllWithFiltersNative(
+                                    walletOwnerUserId, normalizedCategoryName, pageable)
+                            : expenseRepository.findAllWithFiltersJpql(
+                                    walletOwnerUserId, normalizedCategoryName, pageable)
+                    ).map(expenseMapper::toExpenseResponseDto)
+            );
+        }
+    }
+
+    @Transactional(readOnly = true)
     public ExpenseResponseDto getById(Long id) {
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
     }
@@ -94,6 +123,7 @@ public class ExpenseService {
         expense.setTags(new HashSet<>(tags));
 
         Expense saved = expenseRepository.save(expense);
+        invalidateExpenseFilterCache();
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(saved.getId()));
     }
 
@@ -111,6 +141,7 @@ public class ExpenseService {
         expense.setCategory(category);
         expense.setTags(new HashSet<>(tags));
         Expense saved = expenseRepository.save(expense);
+        invalidateExpenseFilterCache();
 
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(saved.getId()));
     }
@@ -132,6 +163,7 @@ public class ExpenseService {
         expense.getTags().addAll(newTags);
 
         expenseRepository.save(expense);
+        invalidateExpenseFilterCache();
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
     }
 
@@ -164,12 +196,27 @@ public class ExpenseService {
         }
 
         expenseRepository.save(expense);
+        invalidateExpenseFilterCache();
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
     }
 
     @Transactional
     public void delete(Long id) {
         expenseRepository.deleteById(id);
+        invalidateExpenseFilterCache();
+    }
+
+    private void invalidateExpenseFilterCache() {
+        synchronized (expenseFilterCache) {
+            expenseFilterCache.clear();
+        }
+    }
+
+    private static String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private static void requirePositiveAmount(BigDecimal amount) {

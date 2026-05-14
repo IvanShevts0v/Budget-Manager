@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,6 +49,25 @@ public class ExpenseController {
             return service.findFiltered(id, description, amount, category, date);
         }
         return service.getAll();
+    }
+
+    /**
+     * Фильтрация по владельцу кошелька (вложенная сущность User) и по имени категории;
+     * {@code native=true} — native SQL, иначе JPQL. Пагинация через {@link Pageable}.
+     */
+    @GetMapping("/by-wallet-and-category")
+    public Page<ExpenseResponseDto> findByWalletAndCategory(
+            @RequestParam(required = false) Long walletOwnerUserId,
+            @RequestParam(required = false) String categoryName,
+            @RequestParam(name = "native", defaultValue = "false") String useNative,
+            Pageable pageable
+    ) {
+        return service.findByWalletOwnerAndCategory(
+                walletOwnerUserId,
+                categoryName,
+                pageable,
+                "true".equalsIgnoreCase(useNative)
+        );
     }
 
     @GetMapping("/{id}")
