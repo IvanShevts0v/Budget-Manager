@@ -10,9 +10,6 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Общие поля расхода для запроса и ответа API (снижает дублирование между DTO).
- */
 @Schema(description = "Common expense fields")
 public abstract class ExpenseFieldsDto {
 

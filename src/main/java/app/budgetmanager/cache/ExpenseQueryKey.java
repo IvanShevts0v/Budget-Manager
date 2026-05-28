@@ -4,9 +4,6 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.Objects;
 
-/**
- * Составной ключ для in-memory кэша выборки расходов (параметры запроса + пагинация).
- */
 public class ExpenseQueryKey {
 
     private final Long walletOwnerUserId;

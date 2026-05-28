@@ -2,9 +2,6 @@ package app.budgetmanager.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/**
- * Ответ API для сущностей с полями {@code id} и {@code name} (категории, теги).
- */
 @Schema(description = "Entity with id and name")
 public class NamedResponseDto {
 

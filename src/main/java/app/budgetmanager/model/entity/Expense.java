@@ -50,11 +50,7 @@ public class Expense {
     )
     private Set<Tag> tags = new HashSet<>();
 
-    /**
-     * Требуется JPA/Hibernate для создания экземпляра сущности (рефлексия, прокси).
-     */
     public Expense() {
-        /* intentionally empty */
     }
 
     public Long getId() {

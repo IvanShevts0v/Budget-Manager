@@ -38,11 +38,7 @@ public class Wallet {
     )
     private List<Expense> expenses = new ArrayList<>();
 
-    /**
-     * Требуется JPA/Hibernate для создания экземпляра сущности (рефлексия, прокси).
-     */
     public Wallet() {
-        /* intentionally empty */
     }
 
     public Long getId() {
