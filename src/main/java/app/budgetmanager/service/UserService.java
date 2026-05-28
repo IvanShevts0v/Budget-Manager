@@ -36,10 +36,7 @@ public class UserService {
 
     @Transactional
     public UserResponseDto registerUser(UserRequestDto userRequestDto) {
-        String username = userRequestDto.getUsername() == null ? "" : userRequestDto.getUsername().trim();
-        if (username.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is required");
-        }
+        String username = userRequestDto.getUsername().trim();
         if (repository.existsByUsername(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
         }
