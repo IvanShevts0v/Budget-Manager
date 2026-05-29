@@ -18,6 +18,7 @@ import app.budgetmanager.dto.NamedResponseDto;
 import app.budgetmanager.dto.TagDto;
 import app.budgetmanager.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,6 +28,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/tags")
 @Validated
 @Tag(name = "Tags", description = "Expense tag management")
@@ -43,10 +45,6 @@ import jakarta.validation.constraints.NotBlank;
 public class TagController {
 
     private final TagService tagService;
-
-    public TagController(TagService tagService) {
-        this.tagService = tagService;
-    }
 
     @GetMapping
     @Operation(summary = "List all tags")

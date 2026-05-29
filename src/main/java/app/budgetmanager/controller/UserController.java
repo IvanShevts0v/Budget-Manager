@@ -17,6 +17,7 @@ import app.budgetmanager.dto.UserRequestDto;
 import app.budgetmanager.dto.UserResponseDto;
 import app.budgetmanager.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,6 +26,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/users")
 @Validated
 @Tag(name = "Users", description = "User registration and management")
@@ -41,10 +43,6 @@ import jakarta.validation.Valid;
 public class UserController {
 
     private final UserService service;
-
-    public UserController(UserService service) {
-        this.service = service;
-    }
 
     @GetMapping
     @Operation(summary = "List all users")

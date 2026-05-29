@@ -5,6 +5,7 @@ import app.budgetmanager.dto.NamedResponseDto;
 import app.budgetmanager.mapper.CategoryMapper;
 import app.budgetmanager.model.entity.Category;
 import app.budgetmanager.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,15 +13,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final CategoryMapper mapper;
-
-    public CategoryService(CategoryRepository categoryRepository, CategoryMapper mapper) {
-        this.categoryRepository = categoryRepository;
-        this.mapper = mapper;
-    }
 
     public NamedResponseDto getById(Long id) {
         return mapper.toNamedResponseDto(categoryRepository.findById(id).orElseThrow());

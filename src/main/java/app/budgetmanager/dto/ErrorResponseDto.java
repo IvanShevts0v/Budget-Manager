@@ -1,10 +1,14 @@
 package app.budgetmanager.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
+@Getter
+@AllArgsConstructor
 @Schema(description = "Unified API error response")
 public class ErrorResponseDto {
 
@@ -25,44 +29,4 @@ public class ErrorResponseDto {
 
     @Schema(description = "Field-level validation errors")
     private final Map<String, String> validationErrors;
-
-    public ErrorResponseDto(
-            LocalDateTime timestamp,
-            int status,
-            String error,
-            String message,
-            String path,
-            Map<String, String> validationErrors
-    ) {
-        this.timestamp = timestamp;
-        this.status = status;
-        this.error = error;
-        this.message = message;
-        this.path = path;
-        this.validationErrors = validationErrors;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public Map<String, String> getValidationErrors() {
-        return validationErrors;
-    }
 }

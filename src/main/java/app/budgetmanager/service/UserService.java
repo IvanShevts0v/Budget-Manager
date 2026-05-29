@@ -6,6 +6,7 @@ import app.budgetmanager.mapper.UserMapper;
 import app.budgetmanager.model.entity.User;
 import app.budgetmanager.model.entity.Wallet;
 import app.budgetmanager.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,15 +15,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository repository;
     private final UserMapper mapper;
-
-    public UserService(UserRepository repository, UserMapper mapper) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
 
     @Transactional(readOnly = true)
     public UserResponseDto getById(Long id) {

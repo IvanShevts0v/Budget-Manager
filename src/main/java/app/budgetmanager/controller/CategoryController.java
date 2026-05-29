@@ -19,6 +19,7 @@ import app.budgetmanager.dto.ErrorResponseDto;
 import app.budgetmanager.dto.NamedResponseDto;
 import app.budgetmanager.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,6 +29,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/categories")
 @Validated
 @Tag(name = "Categories", description = "Expense category management")
@@ -44,10 +46,6 @@ import jakarta.validation.constraints.NotBlank;
 public class CategoryController {
 
     private final CategoryService categoryService;
-
-    public CategoryController(CategoryService categoryService) {
-        this.categoryService = categoryService;
-    }
 
     @GetMapping
     @Operation(summary = "List all categories")

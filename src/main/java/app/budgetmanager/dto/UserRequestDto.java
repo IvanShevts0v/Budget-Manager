@@ -3,7 +3,15 @@ package app.budgetmanager.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Schema(description = "User registration or update request")
 public class UserRequestDto {
 
@@ -15,20 +23,4 @@ public class UserRequestDto {
     @Size(max = 100, message = "Default wallet name must be at most 100 characters")
     @Schema(description = "Name for the default wallet created on registration", example = "Main")
     private String defaultWalletName;
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getDefaultWalletName() {
-        return defaultWalletName;
-    }
-
-    public void setDefaultWalletName(String defaultWalletName) {
-        this.defaultWalletName = defaultWalletName;
-    }
 }

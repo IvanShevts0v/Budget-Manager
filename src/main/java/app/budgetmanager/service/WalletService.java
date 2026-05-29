@@ -7,27 +7,20 @@ import app.budgetmanager.model.entity.User;
 import app.budgetmanager.model.entity.Wallet;
 import app.budgetmanager.repository.UserRepository;
 import app.budgetmanager.repository.WalletRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class WalletService {
 
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
     private final WalletMapper mapper;
 
-    public WalletService(
-            WalletRepository walletRepository,
-            UserRepository userRepository,
-            WalletMapper mapper
-    ) {
-        this.walletRepository = walletRepository;
-        this.userRepository = userRepository;
-        this.mapper = mapper;
-    }
 
     @Transactional(readOnly = true)
     public WalletResponseDto getById(Long id) {

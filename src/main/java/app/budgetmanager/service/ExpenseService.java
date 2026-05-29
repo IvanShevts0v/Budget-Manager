@@ -13,6 +13,7 @@ import app.budgetmanager.repository.ExpenseRepository;
 import app.budgetmanager.repository.ExpenseSpecifications;
 import app.budgetmanager.repository.TagRepository;
 import app.budgetmanager.repository.WalletRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
@@ -38,20 +40,6 @@ public class ExpenseService {
     private final ExpenseMapper expenseMapper;
 
     private final Map<ExpenseQueryKey, Page<ExpenseResponseDto>> expenseFilterCache = new HashMap<>();
-
-    public ExpenseService(
-            ExpenseRepository expenseRepository,
-            WalletRepository walletRepository,
-            CategoryRepository categoryRepository,
-            TagRepository tagRepository,
-            ExpenseMapper expenseMapper
-    ) {
-        this.expenseRepository = expenseRepository;
-        this.walletRepository = walletRepository;
-        this.categoryRepository = categoryRepository;
-        this.tagRepository = tagRepository;
-        this.expenseMapper = expenseMapper;
-    }
 
     @Transactional(readOnly = true)
     public List<ExpenseResponseDto> findFiltered(

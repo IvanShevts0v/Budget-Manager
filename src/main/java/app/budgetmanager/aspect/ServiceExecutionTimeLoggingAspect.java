@@ -1,17 +1,15 @@
 package app.budgetmanager.aspect;
 
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Aspect
 @Component
 public class ServiceExecutionTimeLoggingAspect {
-
-    private static final Logger LOG = LoggerFactory.getLogger(ServiceExecutionTimeLoggingAspect.class);
 
     @Around("execution(* app.budgetmanager.service..*(..))")
     public Object logServiceExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -21,8 +19,8 @@ public class ServiceExecutionTimeLoggingAspect {
         } finally {
             long elapsedNanos = System.nanoTime() - startedAt;
             double elapsedMs = elapsedNanos / 1_000_000.0;
-            if (LOG.isInfoEnabled()) {
-                LOG.info("{} executed in {} ms", joinPoint.getSignature().toShortString(),
+            if (log.isInfoEnabled()) {
+                log.info("{} executed in {} ms", joinPoint.getSignature().toShortString(),
                         String.format("%.3f", elapsedMs));
             }
         }

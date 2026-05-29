@@ -19,12 +19,14 @@ import app.budgetmanager.dto.WalletResponseDto;
 import app.budgetmanager.service.WalletService;
 import app.budgetmanager.validation.ValidationGroups;
 import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/wallets")
 @Validated
 @Tag(name = "Wallets", description = "User wallet management")
@@ -41,10 +43,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class WalletController {
 
     private final WalletService walletService;
-
-    public WalletController(WalletService walletService) {
-        this.walletService = walletService;
-    }
 
     @GetMapping
     @Operation(summary = "List wallets, optionally filtered by user id")

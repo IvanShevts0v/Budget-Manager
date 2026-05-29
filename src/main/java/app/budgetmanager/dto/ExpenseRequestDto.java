@@ -4,9 +4,15 @@ import app.budgetmanager.validation.ValidationGroups;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Schema(description = "Expense create or update request")
 public class ExpenseRequestDto extends ExpenseFieldsDto {
 
@@ -16,20 +22,4 @@ public class ExpenseRequestDto extends ExpenseFieldsDto {
 
     @Schema(description = "Tag ids attached to the expense", example = "[1, 2]")
     private List<Long> tagIds;
-
-    public Long getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Long categoryId) {
-        this.categoryId = categoryId;
-    }
-
-    public List<Long> getTagIds() {
-        return tagIds;
-    }
-
-    public void setTagIds(List<Long> tagIds) {
-        this.tagIds = tagIds;
-    }
 }

@@ -25,6 +25,7 @@ import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.service.ExpenseService;
 import app.budgetmanager.validation.ValidationGroups;
 import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,6 +35,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/expenses")
 @Validated
 @Tag(name = "Expenses", description = "Expense tracking and filtering")
@@ -50,10 +52,6 @@ import jakarta.validation.Valid;
 public class ExpenseController {
 
     private final ExpenseService service;
-
-    public ExpenseController(ExpenseService service) {
-        this.service = service;
-    }
 
     @GetMapping
     @Operation(summary = "List or filter expenses")
