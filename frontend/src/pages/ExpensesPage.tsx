@@ -104,9 +104,6 @@ export default function ExpensesPage() {
         <div>
           <p className="eyebrow">Expenses</p>
           <h1>Expense list & filters</h1>
-          <p className="lead">
-            Each expense belongs to one wallet and category (ManyToOne) and has many tags (ManyToMany).
-          </p>
         </div>
         <button
           type="button"

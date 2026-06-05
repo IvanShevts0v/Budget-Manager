@@ -43,38 +43,26 @@ export default function HomePage() {
 
   return (
     <div className="page">
-      <div className="auth-layout">
-        <section>
-          <p className="eyebrow">Budget Manager SPA</p>
-          <h1>Track expenses with REST API</h1>
-          <p className="lead">
-            React client for the lab backend. Displays <strong>OneToMany</strong> relations (User → Wallets,
-            Wallet → Expenses, Category → Expenses) and <strong>ManyToMany</strong> (Expense ↔ Tags).
-          </p>
-          <ul className="feature-list">
-            <li>CRUD for users, wallets, categories, tags, expenses</li>
-            <li>Filtering by user, category, date, description</li>
-            <li>Paginated expense list with Spring Data Page</li>
-          </ul>
-        </section>
-        <section className="card">
-          <h2>Register</h2>
-          <form className="form-grid" onSubmit={handleRegister}>
-            <label>
-              Username
-              <input value={username} onChange={(e) => setUsername(e.target.value)} required />
-            </label>
-            <label>
-              Default wallet
-              <input value={walletName} onChange={(e) => setWalletName(e.target.value)} />
-            </label>
-            {error && <div className="alert error">{error}</div>}
-            <button type="submit" className="button" disabled={loading}>
-              {loading ? "Creating..." : "Register & continue"}
-            </button>
-          </form>
-        </section>
+      <div className="page-heading">
+        <h1>Budget Manager</h1>
       </div>
+      <section className="card">
+        <h2>Register</h2>
+        <form className="form-grid" onSubmit={handleRegister}>
+          <label>
+            Username
+            <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+          </label>
+          <label>
+            Default wallet
+            <input value={walletName} onChange={(e) => setWalletName(e.target.value)} />
+          </label>
+          {error && <div className="alert error">{error}</div>}
+          <button type="submit" className="button" disabled={loading}>
+            {loading ? "Creating..." : "Register & continue"}
+          </button>
+        </form>
+      </section>
       <section className="card">
         <h2>Select existing user</h2>
         <div className="table-wrap">
@@ -83,7 +71,7 @@ export default function HomePage() {
               <tr>
                 <th>ID</th>
                 <th>Username</th>
-                <th>Wallets (OneToMany)</th>
+                <th>Wallets</th>
                 <th></th>
               </tr>
             </thead>
