@@ -112,6 +112,22 @@ public class ExpenseController {
         return service.create(dto);
     }
 
+    @PostMapping("/bulk")
+    @Operation(summary = "Create multiple expenses in one transaction")
+    public List<ExpenseResponseDto> createBulk(
+            @Validated(ValidationGroups.FullValidation.class) @RequestBody List<ExpenseRequestDto> dtos
+    ) {
+        return service.createBulk(dtos);
+    }
+
+    @PostMapping("/bulk/no-transactional")
+    @Operation(summary = "Create multiple expenses without a single transaction")
+    public List<ExpenseResponseDto> createBulkWithoutTransactional(
+            @Validated(ValidationGroups.FullValidation.class) @RequestBody List<ExpenseRequestDto> dtos
+    ) {
+        return service.createBulkWithoutTransactional(dtos);
+    }
+
     @PostMapping("/no-transactional")
     @Operation(summary = "Create expense without transactional wrapper")
     public ExpenseResponseDto createWithoutTransactional(

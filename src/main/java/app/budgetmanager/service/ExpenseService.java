@@ -27,7 +27,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -93,6 +95,19 @@ public class ExpenseService {
     @Transactional(readOnly = true)
     public ExpenseResponseDto getById(Long id) {
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
+    }
+
+    @Transactional
+    public List<ExpenseResponseDto> createBulk(List<ExpenseRequestDto> requests) {
+        return requests.stream()
+                .map(this::create)
+                .toList();
+    }
+
+    public List<ExpenseResponseDto> createBulkWithoutTransactional(List<ExpenseRequestDto> requests) {
+        return requests.stream()
+                .map(this::createWithoutTransactional)
+                .toList();
     }
 
     @Transactional
@@ -214,28 +229,33 @@ public class ExpenseService {
     }
 
     private Set<Tag> resolveTags(List<Long> tagIds) {
-        if (tagIds == null || tagIds.isEmpty()) {
-            return new HashSet<>();
-        }
-        List<Tag> found = tagRepository.findAllById(tagIds);
-        if (found.size() != tagIds.size()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "One or more tags not found");
-        }
-        return new HashSet<>(found);
+        return Optional.ofNullable(tagIds)
+                .filter(ids -> !ids.isEmpty())
+                .map(ids -> {
+                    List<Tag> found = tagRepository.findAllById(ids);
+                    if (found.size() != ids.size()) {
+                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "One or more tags not found");
+                    }
+                    return found.stream().collect(Collectors.toCollection(HashSet::new));
+                })
+                .orElseGet(HashSet::new);
     }
 
     private Wallet findWalletById(Long walletId) {
-        return walletRepository.findById(walletId)
+        return Optional.ofNullable(walletId)
+                .flatMap(walletRepository::findById)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Wallet not found"));
     }
 
     private Category findCategoryById(Long categoryId) {
-        return categoryRepository.findById(categoryId)
+        return Optional.ofNullable(categoryId)
+                .flatMap(categoryRepository::findById)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
     }
 
     private Expense findExpenseWithAssociations(Long expenseId) {
-        return expenseRepository.findByIdWithAssociations(expenseId)
+        return Optional.ofNullable(expenseId)
+                .flatMap(expenseRepository::findByIdWithAssociations)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Expense not found"));
     }
 }
