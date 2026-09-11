@@ -1,5 +1,6 @@
 package app.budgetmanager.service;
 
+import app.budgetmanager.cache.ExpenseFilterCache;
 import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.mapper.ExpenseMapper;
@@ -11,12 +12,12 @@ import app.budgetmanager.repository.CategoryRepository;
 import app.budgetmanager.repository.ExpenseRepository;
 import app.budgetmanager.repository.TagRepository;
 import app.budgetmanager.repository.WalletRepository;
+import app.budgetmanager.util.AtomicCounter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -57,8 +58,24 @@ class ExpenseServiceTest {
     @Mock
     private ExpenseMapper expenseMapper;
 
-    @InjectMocks
+    private ExpenseFilterCache expenseFilterCache;
+    private AtomicCounter createdExpenseCounter;
     private ExpenseService expenseService;
+
+    @BeforeEach
+    void setUp() {
+        expenseFilterCache = new ExpenseFilterCache();
+        createdExpenseCounter = new AtomicCounter();
+        expenseService = new ExpenseService(
+                expenseRepository,
+                walletRepository,
+                categoryRepository,
+                tagRepository,
+                expenseMapper,
+                expenseFilterCache,
+                createdExpenseCounter
+        );
+    }
 
     @Test
     void createShouldSaveAndReturnExpense() {
@@ -77,6 +94,7 @@ class ExpenseServiceTest {
         ExpenseResponseDto result = expenseService.create(request);
 
         assertEquals(response, result);
+        assertEquals(1, createdExpenseCounter.get());
         verify(expenseRepository).save(any(Expense.class));
         verify(expenseRepository).findByIdWithAssociations(EXPENSE_ID);
         verify(expenseMapper).toExpenseResponseDto(saved);
@@ -90,6 +108,7 @@ class ExpenseServiceTest {
 
         assertThrows(ResponseStatusException.class, () -> expenseService.create(request));
 
+        assertEquals(0, createdExpenseCounter.get());
         verify(walletRepository).findById(WALLET_ID);
         verify(expenseRepository, never()).save(any());
         verifyNoMoreInteractions(categoryRepository, tagRepository, expenseMapper);
@@ -124,6 +143,7 @@ class ExpenseServiceTest {
         assertEquals(2, result.size());
         assertEquals("Coffee", result.get(0).getDescription());
         assertEquals("Lunch", result.get(1).getDescription());
+        assertEquals(2, createdExpenseCounter.get());
         verify(expenseRepository, times(2)).save(any(Expense.class));
     }
 
@@ -171,6 +191,7 @@ class ExpenseServiceTest {
         List<ExpenseResponseDto> result = expenseService.createBulkWithoutTransactional(List.of(request));
 
         assertEquals(1, result.size());
+        assertEquals(1, createdExpenseCounter.get());
         verify(expenseRepository).save(any(Expense.class));
     }
 

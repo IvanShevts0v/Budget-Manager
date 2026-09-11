@@ -6,7 +6,9 @@ import {
   patchCategory,
   searchCategoriesByName,
 } from "../api/categoriesApi";
+import { PAGE_SIZE } from "../api/paging";
 import type { NamedEntity } from "../api/types";
+import PaginationBar from "../components/PaginationBar";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<NamedEntity[]>([]);
@@ -15,36 +17,38 @@ export default function CategoriesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const loadAll = () => {
-    getCategories()
-      .then(setCategories)
+  const load = () => {
+    const request = filterName.trim()
+      ? searchCategoriesByName(filterName.trim(), { page, size: PAGE_SIZE, sort: "id" })
+      : getCategories({ page, size: PAGE_SIZE, sort: "id" });
+    request
+      .then((result) => {
+        setCategories(result.content);
+        setTotalPages(result.totalPages);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load categories"));
   };
 
-  useEffect(loadAll, []);
-
   useEffect(() => {
-    if (!filterName.trim()) {
-      loadAll();
-      return;
-    }
-    searchCategoriesByName(filterName.trim())
-      .then(setCategories)
-      .catch((err) => setError(err instanceof Error ? err.message : "Search failed"));
+    setPage(0);
   }, [filterName]);
+
+  useEffect(load, [filterName, page]);
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
     await createCategory(name);
     setName("");
-    loadAll();
+    load();
   };
 
   const handleSave = async (id: number) => {
     await patchCategory(id, editingName);
     setEditingId(null);
-    loadAll();
+    load();
   };
 
   const handleDelete = async (category: NamedEntity) => {
@@ -52,7 +56,7 @@ export default function CategoriesPage() {
       return;
     }
     await deleteCategory(category.id);
-    loadAll();
+    load();
   };
 
   return (
@@ -132,6 +136,7 @@ export default function CategoriesPage() {
           </tbody>
         </table>
       </div>
+      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

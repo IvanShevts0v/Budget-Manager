@@ -1,8 +1,13 @@
 import { request, requestVoid } from "./client";
-import type { UserRequest, UserResponse } from "./types";
+import { LOOKUP_SIZE, pageQuery, type PageParams } from "./paging";
+import type { PageResponse, UserRequest, UserResponse } from "./types";
 
-export function getUsers() {
-  return request<UserResponse[]>("/users");
+export function getUsers(params: PageParams = {}) {
+  return request<PageResponse<UserResponse>>(`/users${pageQuery(params)}`);
+}
+
+export function getUsersLookup() {
+  return getUsers({ page: 0, size: LOOKUP_SIZE, sort: "id" });
 }
 
 export function getUser(id: number) {

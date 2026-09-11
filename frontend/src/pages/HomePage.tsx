@@ -1,21 +1,30 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUsers, registerUser } from "../api/usersApi";
+import { PAGE_SIZE } from "../api/paging";
 import type { UserResponse } from "../api/types";
 import { useAppContext } from "../state/AppContext";
+import PaginationBar from "../components/PaginationBar";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { setSelectedUserId } = useAppContext();
   const [users, setUsers] = useState<UserResponse[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [username, setUsername] = useState("");
   const [walletName, setWalletName] = useState("Default");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getUsers().then(setUsers).catch(() => setUsers([]));
-  }, []);
+    getUsers({ page, size: PAGE_SIZE, sort: "id" })
+      .then((result) => {
+        setUsers(result.content);
+        setTotalPages(result.totalPages);
+      })
+      .catch(() => setUsers([]));
+  }, [page]);
 
   const handleSelect = (user: UserResponse) => {
     setSelectedUserId(user.id);
@@ -91,6 +100,7 @@ export default function HomePage() {
             </tbody>
           </table>
         </div>
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
       </section>
     </div>
   );

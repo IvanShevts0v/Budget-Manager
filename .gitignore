@@ -17,6 +17,13 @@ Thumbs.db
 *.log
 logs/
 
+# Environment
+.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
 # Java
 *.class
 *.jar

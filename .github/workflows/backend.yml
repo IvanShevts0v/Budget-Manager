@@ -1,0 +1,70 @@
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  backend-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test
+        run: mvn -B test
+
+      - name: Build
+        run: mvn -B package -DskipTests
+
+  backend-deploy:
+    if: github.event_name == 'push'
+
+    needs: backend-build
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy backend
+        run: railway up --service ${{ secrets.RAILWAY_BACKEND_SERVICE }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Healthcheck
+        env:
+          BACKEND_PUBLIC_URL: ${{ secrets.BACKEND_PUBLIC_URL }}
+        run: |
+          if [ -z "$BACKEND_PUBLIC_URL" ]; then
+            echo "BACKEND_PUBLIC_URL is not set; healthcheck skipped."
+            exit 0
+          fi
+
+          HEALTH_URL="${BACKEND_PUBLIC_URL%/}/actuator/health"
+
+          for i in $(seq 1 30); do
+            BODY=$(curl -fsS --max-time 10 "$HEALTH_URL" || true)
+
+            if echo "$BODY" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"'; then
+              echo "Healthcheck passed: $HEALTH_URL"
+              exit 0
+            fi
+
+            echo "Waiting for backend to become healthy... attempt $i/30"
+            sleep 10
+          done
+
+          echo "Healthcheck failed: $HEALTH_URL"
+          exit 1

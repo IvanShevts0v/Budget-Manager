@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,7 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import app.budgetmanager.config.Paging;
 import app.budgetmanager.dto.ErrorResponseDto;
+import app.budgetmanager.dto.ExpenseBulkRequestDto;
 import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.service.ExpenseService;
@@ -55,7 +58,7 @@ public class ExpenseController {
 
     @GetMapping
     @Operation(summary = "List or filter expenses")
-    public List<ExpenseResponseDto> getAll(
+    public Page<ExpenseResponseDto> getAll(
             @Parameter(description = "Filter by wallet owner user id")
             @RequestParam(required = false) Long senderUserId,
             @Parameter(description = "Filter by expense id")
@@ -67,16 +70,23 @@ public class ExpenseController {
             @Parameter(description = "Filter by category name")
             @RequestParam(required = false) String category,
             @Parameter(description = "Filter by date (ISO-8601)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @PageableDefault(size = Paging.DEFAULT_SIZE, sort = "id") Pageable pageable
     ) {
         if (senderUserId != null) {
-            return service.getBySenderUserId(senderUserId);
+            return service.getBySenderUserId(senderUserId, pageable);
         }
         if (id != null || (description != null && !description.isEmpty()) || amount != null
                 || (category != null && !category.isEmpty()) || date != null) {
-            return service.findFiltered(id, description, amount, category, date);
+            return service.findFiltered(id, description, amount, category, date, pageable);
         }
-        return service.getAll();
+        return service.getAll(pageable);
+    }
+
+    @GetMapping("/created-count")
+    @Operation(summary = "Get number of expenses created since process start")
+    public int getCreatedExpenseCount() {
+        return service.getCreatedExpenseCount();
     }
 
     @GetMapping("/by-wallet-and-category")
@@ -88,7 +98,7 @@ public class ExpenseController {
             @RequestParam(required = false) String categoryName,
             @Parameter(description = "Use native SQL when true")
             @RequestParam(name = "native", defaultValue = "false") String useNative,
-            Pageable pageable
+            @PageableDefault(size = Paging.DEFAULT_SIZE) Pageable pageable
     ) {
         return service.findByWalletOwnerAndCategory(
                 walletOwnerUserId,
@@ -114,18 +124,16 @@ public class ExpenseController {
 
     @PostMapping("/bulk")
     @Operation(summary = "Create multiple expenses in one transaction")
-    public List<ExpenseResponseDto> createBulk(
-            @Validated(ValidationGroups.FullValidation.class) @RequestBody List<ExpenseRequestDto> dtos
-    ) {
-        return service.createBulk(dtos);
+    public List<ExpenseResponseDto> createBulk(@Valid @RequestBody ExpenseBulkRequestDto request) {
+        return service.createBulk(request.getItems());
     }
 
     @PostMapping("/bulk/no-transactional")
     @Operation(summary = "Create multiple expenses without a single transaction")
     public List<ExpenseResponseDto> createBulkWithoutTransactional(
-            @Validated(ValidationGroups.FullValidation.class) @RequestBody List<ExpenseRequestDto> dtos
+            @Valid @RequestBody ExpenseBulkRequestDto request
     ) {
-        return service.createBulkWithoutTransactional(dtos);
+        return service.createBulkWithoutTransactional(request.getItems());
     }
 
     @PostMapping("/no-transactional")

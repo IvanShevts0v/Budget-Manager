@@ -1,7 +1,8 @@
 package app.budgetmanager.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import app.budgetmanager.config.Paging;
 import app.budgetmanager.dto.CategoryRequestDto;
 import app.budgetmanager.dto.ErrorResponseDto;
 import app.budgetmanager.dto.NamedResponseDto;
@@ -49,8 +51,10 @@ public class CategoryController {
 
     @GetMapping
     @Operation(summary = "List all categories")
-    public List<NamedResponseDto> getAll() {
-        return categoryService.getAll();
+    public Page<NamedResponseDto> getAll(
+            @PageableDefault(size = Paging.DEFAULT_SIZE, sort = "id") Pageable pageable
+    ) {
+        return categoryService.getAll(pageable);
     }
 
     @GetMapping("/by-name/exact")
@@ -61,8 +65,11 @@ public class CategoryController {
 
     @GetMapping("/by-name")
     @Operation(summary = "Search categories by name")
-    public List<NamedResponseDto> getByName(@RequestParam @NotBlank(message = "Name is required") String name) {
-        return categoryService.getByName(name);
+    public Page<NamedResponseDto> getByName(
+            @RequestParam @NotBlank(message = "Name is required") String name,
+            @PageableDefault(size = Paging.DEFAULT_SIZE, sort = "id") Pageable pageable
+    ) {
+        return categoryService.getByName(name, pageable);
     }
 
     @GetMapping("/{id}")

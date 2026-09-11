@@ -1,7 +1,8 @@
 package app.budgetmanager.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import app.budgetmanager.config.Paging;
 import app.budgetmanager.dto.ErrorResponseDto;
 import app.budgetmanager.dto.NamedResponseDto;
 import app.budgetmanager.dto.TagDto;
@@ -48,8 +50,8 @@ public class TagController {
 
     @GetMapping
     @Operation(summary = "List all tags")
-    public List<NamedResponseDto> getAll() {
-        return tagService.getAll();
+    public Page<NamedResponseDto> getAll(@PageableDefault(size = Paging.DEFAULT_SIZE, sort = "id") Pageable pageable) {
+        return tagService.getAll(pageable);
     }
 
     @GetMapping("/by-name")

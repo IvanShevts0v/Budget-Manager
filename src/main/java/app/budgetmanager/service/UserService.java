@@ -1,5 +1,6 @@
 package app.budgetmanager.service;
 
+import app.budgetmanager.cache.ExpenseFilterCache;
 import app.budgetmanager.dto.UserRequestDto;
 import app.budgetmanager.dto.UserResponseDto;
 import app.budgetmanager.mapper.UserMapper;
@@ -7,12 +8,12 @@ import app.budgetmanager.model.entity.User;
 import app.budgetmanager.model.entity.Wallet;
 import app.budgetmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +21,7 @@ public class UserService {
 
     private final UserRepository repository;
     private final UserMapper mapper;
+    private final ExpenseFilterCache expenseFilterCache;
 
     @Transactional(readOnly = true)
     public UserResponseDto getById(Long id) {
@@ -27,8 +29,8 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponseDto> getAll() {
-        return repository.findAll().stream().map(mapper::toUserResponseDto).toList();
+    public Page<UserResponseDto> getAll(Pageable pageable) {
+        return repository.findAll(pageable).map(mapper::toUserResponseDto);
     }
 
     @Transactional
@@ -50,6 +52,7 @@ public class UserService {
 
     public void delete(Long id) {
         repository.deleteById(id);
+        expenseFilterCache.invalidate();
     }
 
     @Transactional

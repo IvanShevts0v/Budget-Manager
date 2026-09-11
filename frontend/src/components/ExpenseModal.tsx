@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
-import { getCategories } from "../api/categoriesApi";
-import { getTags } from "../api/tagsApi";
-import { getWallets } from "../api/walletsApi";
+import { getCategoriesLookup } from "../api/categoriesApi";
+import { getTagsLookup } from "../api/tagsApi";
+import { getWalletsLookup } from "../api/walletsApi";
 import type { ExpenseRequest, ExpenseResponse, NamedEntity, WalletResponse } from "../api/types";
 
 interface ExpenseModalProps {
@@ -29,11 +29,11 @@ export default function ExpenseModal({ open, userId, expense, onClose, onSave }:
     if (!open) {
       return;
     }
-    Promise.all([getWallets(userId), getCategories(), getTags()])
-      .then(([walletList, categoryList, tagList]) => {
-        setWallets(walletList);
-        setCategories(categoryList);
-        setTags(tagList);
+    Promise.all([getWalletsLookup(userId), getCategoriesLookup(), getTagsLookup()])
+      .then(([walletPage, categoryPage, tagPage]) => {
+        setWallets(walletPage.content);
+        setCategories(categoryPage.content);
+        setTags(tagPage.content);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load form data"));
   }, [open, userId]);

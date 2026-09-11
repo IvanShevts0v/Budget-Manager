@@ -1,4 +1,5 @@
 import { request, requestVoid } from "./client";
+import { LOOKUP_SIZE, buildQuery, pageQuery, type PageParams } from "./paging";
 import type {
   ExpenseFilters,
   ExpenseRequest,
@@ -7,20 +8,9 @@ import type {
   PaginatedExpenseFilters,
 } from "./types";
 
-function buildQuery(params: Record<string, string | number | undefined>): string {
-  const search = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== "") {
-      search.set(key, String(value));
-    }
-  });
-  const query = search.toString();
-  return query ? `?${query}` : "";
-}
-
-export function getExpenses(filters: ExpenseFilters = {}) {
-  return request<ExpenseResponse[]>(
-    `/expenses${buildQuery({
+export function getExpenses(filters: ExpenseFilters = {}, params: PageParams = {}) {
+  return request<PageResponse<ExpenseResponse>>(
+    `/expenses${pageQuery(params, {
       senderUserId: filters.senderUserId,
       id: filters.id,
       description: filters.description,
@@ -29,6 +19,10 @@ export function getExpenses(filters: ExpenseFilters = {}) {
       date: filters.date,
     })}`
   );
+}
+
+export function getExpensesLookup(filters: ExpenseFilters = {}) {
+  return getExpenses(filters, { page: 0, size: LOOKUP_SIZE, sort: "id" });
 }
 
 export function getExpensesPaginated(filters: PaginatedExpenseFilters = {}) {

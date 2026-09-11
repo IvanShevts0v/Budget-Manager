@@ -1,14 +1,18 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { getExpenses } from "../api/expensesApi";
+import { getExpensesLookup } from "../api/expensesApi";
 import { createWallet, deleteWallet, getWallets, renameWallet } from "../api/walletsApi";
+import { PAGE_SIZE } from "../api/paging";
 import type { ExpenseResponse, WalletResponse } from "../api/types";
 import { useAppContext } from "../state/AppContext";
+import PaginationBar from "../components/PaginationBar";
 
 export default function WalletsPage() {
   const { selectedUserId } = useAppContext();
   const [wallets, setWallets] = useState<WalletResponse[]>([]);
   const [expenses, setExpenses] = useState<ExpenseResponse[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [newWalletName, setNewWalletName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -18,17 +22,18 @@ export default function WalletsPage() {
     if (selectedUserId == null) {
       return;
     }
-    const [walletList, expenseList] = await Promise.all([
-      getWallets(selectedUserId),
-      getExpenses({ senderUserId: selectedUserId }),
+    const [walletPage, expensePage] = await Promise.all([
+      getWallets(selectedUserId, { page, size: PAGE_SIZE, sort: "id" }),
+      getExpensesLookup({ senderUserId: selectedUserId }),
     ]);
-    setWallets(walletList);
-    setExpenses(expenseList);
+    setWallets(walletPage.content);
+    setTotalPages(walletPage.totalPages);
+    setExpenses(expensePage.content);
   };
 
   useEffect(() => {
     load().catch((err) => setError(err instanceof Error ? err.message : "Failed to load wallets"));
-  }, [selectedUserId]);
+  }, [selectedUserId, page]);
 
   if (selectedUserId == null) {
     return <Navigate to="/" replace />;
@@ -131,6 +136,7 @@ export default function WalletsPage() {
           );
         })}
       </div>
+      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

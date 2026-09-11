@@ -28,8 +28,20 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     Optional<Expense> findByIdWithAssociations(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
+    @Override
+    Page<Expense> findAll(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
+    @Override
+    Page<Expense> findAll(Specification<Expense> spec, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
     @Query("SELECT e FROM Expense e WHERE e.wallet.user.id = :userId")
     List<Expense> findByWalletOwnerUserId(@Param("userId") Long userId);
+
+    @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
+    @Query("SELECT e FROM Expense e WHERE e.wallet.user.id = :userId")
+    Page<Expense> findByWalletOwnerUserId(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"category", "tags", "wallet", "wallet.user"})
     @Query("SELECT DISTINCT e FROM Expense e JOIN e.tags t WHERE t.id = :tagId")

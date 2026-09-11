@@ -1,19 +1,26 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { deleteUser, getUsers } from "../api/usersApi";
+import { PAGE_SIZE } from "../api/paging";
 import type { UserResponse } from "../api/types";
+import PaginationBar from "../components/PaginationBar";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const load = () => {
-    getUsers()
-      .then(setUsers)
+    getUsers({ page, size: PAGE_SIZE, sort: "id" })
+      .then((result) => {
+        setUsers(result.content);
+        setTotalPages(result.totalPages);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load users"));
   };
 
-  useEffect(load, []);
+  useEffect(load, [page]);
 
   const handleDelete = async (user: UserResponse) => {
     if (!window.confirm(`Delete user ${user.username}? Wallets and expenses will be removed.`)) {
@@ -66,6 +73,7 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

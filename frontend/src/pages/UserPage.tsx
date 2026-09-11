@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getExpenses } from "../api/expensesApi";
-import { createWallet, getWallets } from "../api/walletsApi";
+import { getExpensesLookup } from "../api/expensesApi";
+import { createWallet, getWalletsLookup } from "../api/walletsApi";
 import { getUser, updateUser } from "../api/usersApi";
 import type { ExpenseResponse, UserResponse, WalletResponse } from "../api/types";
 import { useAppContext } from "../state/AppContext";
@@ -18,15 +18,15 @@ export default function UserPage() {
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    const [userData, walletData, expenseData] = await Promise.all([
+    const [userData, walletPage, expensePage] = await Promise.all([
       getUser(userId),
-      getWallets(userId),
-      getExpenses({ senderUserId: userId }),
+      getWalletsLookup(userId),
+      getExpensesLookup({ senderUserId: userId }),
     ]);
     setUser(userData);
     setUsername(userData.username);
-    setWallets(walletData);
-    setExpenses(expenseData);
+    setWallets(walletPage.content);
+    setExpenses(expensePage.content);
   };
 
   useEffect(() => {

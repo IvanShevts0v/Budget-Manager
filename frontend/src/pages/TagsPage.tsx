@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createTag, deleteTag, getTags, getTagByName, patchTag } from "../api/tagsApi";
+import { PAGE_SIZE } from "../api/paging";
 import type { NamedEntity } from "../api/types";
+import PaginationBar from "../components/PaginationBar";
 
 export default function TagsPage() {
   const [tags, setTags] = useState<NamedEntity[]>([]);
@@ -9,36 +11,47 @@ export default function TagsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const loadAll = () => {
-    getTags()
-      .then(setTags)
+  const load = () => {
+    if (filterName.trim()) {
+      getTagByName(filterName.trim())
+        .then((tag) => {
+          setTags([tag]);
+          setTotalPages(1);
+        })
+        .catch(() => {
+          setTags([]);
+          setTotalPages(1);
+        });
+      return;
+    }
+    getTags({ page, size: PAGE_SIZE, sort: "id" })
+      .then((result) => {
+        setTags(result.content);
+        setTotalPages(result.totalPages);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load tags"));
   };
 
-  useEffect(loadAll, []);
-
   useEffect(() => {
-    if (!filterName.trim()) {
-      loadAll();
-      return;
-    }
-    getTagByName(filterName.trim())
-      .then((tag) => setTags([tag]))
-      .catch(() => setTags([]));
+    setPage(0);
   }, [filterName]);
+
+  useEffect(load, [filterName, page]);
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
     await createTag(name);
     setName("");
-    loadAll();
+    load();
   };
 
   const handleSave = async (id: number) => {
     await patchTag(id, editingName);
     setEditingId(null);
-    loadAll();
+    load();
   };
 
   const handleDelete = async (tag: NamedEntity) => {
@@ -46,7 +59,7 @@ export default function TagsPage() {
       return;
     }
     await deleteTag(tag.id);
-    loadAll();
+    load();
   };
 
   return (
@@ -134,6 +147,7 @@ export default function TagsPage() {
           </tbody>
         </table>
       </div>
+      {!filterName.trim() && <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />}
     </div>
   );
 }

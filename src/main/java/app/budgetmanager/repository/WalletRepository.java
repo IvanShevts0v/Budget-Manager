@@ -1,6 +1,8 @@
 package app.budgetmanager.repository;
 
 import app.budgetmanager.model.entity.Wallet;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,4 +13,7 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
     @Query("SELECT w FROM Wallet w WHERE w.user.id = :userId")
     List<Wallet> findByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT w FROM Wallet w WHERE w.user.id = :userId")
+    Page<Wallet> findByUserId(@Param("userId") Long userId, Pageable pageable);
 }

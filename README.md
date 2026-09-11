@@ -4,10 +4,10 @@
 
 ## Возможности
 
-- **Пользователи:** `GET /users/all`, `GET /users/{id}`, `POST /users/register` (создаёт пользователя и кошелёк по умолчанию), `PATCH /users/{id}/change-user-information`, `DELETE /users/{id}`.
-- **Кошельки:** `GET /wallets`, `GET /wallets?userId=`, `GET /wallets/{id}`, `POST /wallets`, `PATCH /wallets/{id}/name/{name}`, `DELETE /wallets/{id}`.
-- **Категории и теги:** CRUD по путям `/categories` и `/tags`; ответы категорий и тегов — DTO `NamedResponseDto` (`id`, `name`). Создание категории: `POST /categories` с телом `{"name":"..."}` (`CategoryRequestDto`).
-- **Расходы:** `GET /expenses` (опционально `senderUserId` или фильтры `id`, `description`, `amount`, `category`, `date`), `GET /expenses/{id}`, `POST /expenses`, `POST /expenses/bulk` (массив расходов, одна транзакция — всё или ничего), `POST /expenses/bulk/no-transactional` (каждый элемент коммитится отдельно), `POST /expenses/no-transactional`, `PUT /expenses/{id}`, `DELETE /expenses/{id}`.
+- **Пользователи:** `GET /users` (`Pageable`: `page`, `size`, `sort`), `GET /users/{id}`, `POST /users/register` (создаёт пользователя и кошелёк по умолчанию), `PATCH /users/{id}`, `DELETE /users/{id}`.
+- **Кошельки:** `GET /wallets`, `GET /wallets?userId=` (оба — `Page`), `GET /wallets/{id}`, `POST /wallets`, `PATCH /wallets/{id}`, `DELETE /wallets/{id}`.
+- **Категории и теги:** CRUD по путям `/categories` и `/tags`; списки — `Page`. Создание категории: `POST /categories` с телом `{"name":"..."}` (`CategoryRequestDto`).
+- **Расходы:** `GET /expenses` (фильтры + пагинация), `GET /expenses/by-wallet-and-category` (JPQL/native + кэш), `GET /expenses/created-count`, `GET /expenses/{id}`, `POST /expenses`, `POST /expenses/bulk`, `POST /expenses/bulk/no-transactional`, `POST /expenses/no-transactional`, `PUT /expenses/{id}`, `DELETE /expenses/{id}`.
 - **Асинхронные задачи** (как [student-forum](https://github.com/Yakush-A/student-forum) `/tasks`): `POST /tasks?userId=` (`@Async`), `POST /tasks/completable-future?userId=` (`CompletableFuture`), `GET /tasks/{id}?userId=` — формирование отчёта ~10 с, статусы `PENDING` → `IN_PROGRESS` → `DONE`.
 - Слои **Controller → Service → Repository**, DTO в виде JavaBean, маппинг **MapStruct** (`mapper` + сущности в `model.entity`).
 
@@ -68,6 +68,8 @@
 }
 ```
 
+Для списков (`GET /users`, `/wallets`, `/categories`, `/categories/by-name`, `/tags`, `/expenses`, `/expenses/by-wallet-and-category`) ответ — Spring `Page`: `content`, `totalPages`, `totalElements`. Параметры: `page`, `size` (по умолчанию 20, максимум 100), `sort`. Get-by-id не пагинируется.
+
 `amount` должно быть **строго больше нуля**. `tagIds` можно опустить или передать `[]`.
 
 ### Bulk-операция и транзакции
@@ -91,6 +93,18 @@ Content-Type: application/json
 
 Проверка: отправьте массив из двух объектов, у второго укажите несуществующий `walletId`, затем `GET /expenses` — с `/bulk` список пустой, с `/bulk/no-transactional` виден первый расход.
 
+Тело — JSON-массив. Элементы валидируются через `@Valid` и группу `FullValidation` (пустой массив → 400).
+
+### JPQL / native query, пагинация и in-memory индекс
+
+`GET /expenses/by-wallet-and-category` фильтрует по вложенным сущностям (`wallet.user.id`, `category.name`):
+
+- JPQL: `?native=false` (`findAllWithFiltersJpql`)
+- native SQL: `?native=true` (`findAllWithFiltersNative`)
+- `Pageable`: `page`, `size`, `sort`
+
+Повторные запросы с теми же параметрами отдаются из `HashMap` (`ExpenseFilterCache`, ключ `ExpenseQueryKey` с `equals`/`hashCode`). Кэш сбрасывается **после commit** транзакции при изменении расходов, категорий, кошельков, тегов и пользователей.
+
 Unit-тесты сервиса: `mvn test` (`ExpenseServiceTest`, `AsyncTaskServiceTest`, `RaceConditionTest`, Mockito).
 
 ### Многопоточность и нагрузка
@@ -98,7 +112,7 @@ Unit-тесты сервиса: `mvn test` (`ExpenseServiceTest`, `AsyncTaskServ
 | Требование | Реализация |
 |------------|------------|
 | `@Async` / `CompletableFuture` | `AsyncTaskExecutor`, `POST /tasks`, `POST /tasks/completable-future` |
-| Потокобезопасный счётчик | `AtomicCounter` (`AtomicInteger`) |
+| Потокобезопасный счётчик | `AtomicCounter` (`AtomicInteger`) — инкремент при каждом `POST /expenses` (и bulk); `GET /expenses/created-count` |
 | Race condition 50+ потоков | `RaceConditionTest` — 100 потоков, `NonAtomicCounter` &lt; ожидания, `AtomicCounter` = 50 000 |
 | JMeter | [`jmeter/Plan.jmx`](jmeter/Plan.jmx), инструкция [`jmeter/README.md`](jmeter/README.md) |
 
@@ -131,11 +145,79 @@ npm run dev
 
 ## Настройка и окружение
 
-В `application.yml`: PostgreSQL `budgetdb`, `spring.jpa.hibernate.ddl-auto=update`, `server.port=8080`, пароль `${dbpassword}`.
+Переменные окружения (см. [`.env.example`](.env.example)):
 
-## Сборка и запуск
+| Переменная | Описание | По умолчанию (local) |
+|------------|----------|----------------------|
+| `SPRING_DATASOURCE_URL` | JDBC URL PostgreSQL | `jdbc:postgresql://localhost:5432/budgetdb` |
+| `SPRING_DATASOURCE_USERNAME` | пользователь БД | `postgres` |
+| `SPRING_DATASOURCE_PASSWORD` / `DB_PASSWORD` | пароль БД | — |
+| `FRONTEND_PROD_HOST_URL` | CORS для фронта | `http://localhost:5173` |
+| `SERVER_PORT` | порт backend | `8080` |
+
+Healthcheck: `GET /actuator/health` (Spring Actuator).
+
+## Docker и Docker Compose
+
+По образцу [student-forum](https://github.com/Yakush-A/student-forum):
 
 ```bash
+cp .env.example .env
+# отредактируй POSTGRES_PASSWORD при необходимости
+
+docker compose up --build
+```
+
+| Сервис | URL |
+|--------|-----|
+| Frontend (nginx) | http://localhost:3000 |
+| Backend API | http://localhost:8080 |
+| Swagger | http://localhost:8080/swagger-ui.html |
+| Health | http://localhost:8080/actuator/health |
+
+Compose поднимает **PostgreSQL 16**, **backend** (Dockerfile в корне), **frontend** (nginx + proxy `/api` → backend).  
+Healthcheck: `pg_isready`, `curl /actuator/health`, `curl /` на frontend.
+
+## CI/CD (GitHub Actions)
+
+Workflows в [`.github/workflows/`](.github/workflows/):
+
+| Workflow | PR | push `main` |
+|----------|-----|-------------|
+| `backend.yml` | `mvn test`, `mvn package` | + deploy на Railway + healthcheck `/actuator/health` |
+| `frontend.yml` | `npm ci`, `npm run build` | + deploy на Railway + healthcheck `/` |
+
+После деплоя workflow опрашивает задеплоенное приложение (до 30 попыток с интервалом 10 с) и падает, если backend не отдаёт `"status":"UP"`, а frontend — HTTP 200. Если URL-секрет не задан, шаг healthcheck пропускается.
+
+### Secrets для Railway (Settings → Secrets)
+
+| Secret | Описание |
+|--------|----------|
+| `RAILWAY_TOKEN` | токен из [Railway](https://railway.app) → Account Settings |
+| `RAILWAY_BACKEND_SERVICE` | имя/ID сервиса backend |
+| `RAILWAY_FRONTEND_SERVICE` | имя/ID сервиса frontend |
+| `BACKEND_PUBLIC_URL` | публичный URL backend, например `https://your-backend.up.railway.app` |
+| `FRONTEND_PUBLIC_URL` | публичный URL frontend, например `https://your-frontend.up.railway.app` |
+
+### Деплой на Railway (PaaS)
+
+1. Создай проект на [Railway](https://railway.app).
+2. Добавь **PostgreSQL** — скопируй переменные подключения.
+3. **Backend service:** root directory = `/`, Dockerfile = `Dockerfile`.  
+   Variables:
+   - `SPRING_DATASOURCE_URL=jdbc:postgresql://HOST:PORT/DB`
+   - `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`
+   - `FRONTEND_PROD_HOST_URL=https://your-frontend.up.railway.app`
+4. **Frontend service:** root directory = `frontend`, Dockerfile = `frontend/Dockerfile`.  
+   Variables:
+   - `BACKEND_HOST` = internal hostname backend в Railway
+   - `BACKEND_PORT` = `8080`
+5. Подключи GitHub repo → push в `main` запускает CI/CD.
+
+## Сборка и запуск (локально)
+
+```bash
+$env:DB_PASSWORD="postgres"
 mvn spring-boot:run
 ```
 

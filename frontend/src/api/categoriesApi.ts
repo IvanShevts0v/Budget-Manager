@@ -1,16 +1,23 @@
 import { request, requestVoid } from "./client";
-import type { NamedEntity } from "./types";
+import { LOOKUP_SIZE, pageQuery, type PageParams } from "./paging";
+import type { NamedEntity, PageResponse } from "./types";
 
-export function getCategories() {
-  return request<NamedEntity[]>("/categories");
+export function getCategories(params: PageParams = {}) {
+  return request<PageResponse<NamedEntity>>(`/categories${pageQuery(params)}`);
+}
+
+export function getCategoriesLookup() {
+  return getCategories({ page: 0, size: LOOKUP_SIZE, sort: "id" });
 }
 
 export function getCategory(id: number) {
   return request<NamedEntity>(`/categories/${id}`);
 }
 
-export function searchCategoriesByName(name: string) {
-  return request<NamedEntity[]>(`/categories/by-name?name=${encodeURIComponent(name)}`);
+export function searchCategoriesByName(name: string, params: PageParams = {}) {
+  return request<PageResponse<NamedEntity>>(
+    `/categories/by-name${pageQuery(params, { name })}`
+  );
 }
 
 export function createCategory(name: string) {

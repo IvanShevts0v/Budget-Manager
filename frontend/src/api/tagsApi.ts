@@ -1,8 +1,13 @@
 import { request, requestVoid } from "./client";
-import type { NamedEntity } from "./types";
+import { LOOKUP_SIZE, pageQuery, type PageParams } from "./paging";
+import type { NamedEntity, PageResponse } from "./types";
 
-export function getTags() {
-  return request<NamedEntity[]>("/tags");
+export function getTags(params: PageParams = {}) {
+  return request<PageResponse<NamedEntity>>(`/tags${pageQuery(params)}`);
+}
+
+export function getTagsLookup() {
+  return getTags({ page: 0, size: LOOKUP_SIZE, sort: "id" });
 }
 
 export function getTag(id: number) {

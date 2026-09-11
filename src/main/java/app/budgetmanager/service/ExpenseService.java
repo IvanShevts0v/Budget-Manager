@@ -1,5 +1,6 @@
 package app.budgetmanager.service;
 
+import app.budgetmanager.cache.ExpenseFilterCache;
 import app.budgetmanager.cache.ExpenseQueryKey;
 import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
@@ -13,6 +14,7 @@ import app.budgetmanager.repository.ExpenseRepository;
 import app.budgetmanager.repository.ExpenseSpecifications;
 import app.budgetmanager.repository.TagRepository;
 import app.budgetmanager.repository.WalletRepository;
+import app.budgetmanager.util.AtomicCounter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,10 +25,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,34 +40,32 @@ public class ExpenseService {
     private final CategoryRepository categoryRepository;
     private final TagRepository tagRepository;
     private final ExpenseMapper expenseMapper;
-
-    private final Map<ExpenseQueryKey, Page<ExpenseResponseDto>> expenseFilterCache = new HashMap<>();
+    private final ExpenseFilterCache expenseFilterCache;
+    private final AtomicCounter createdExpenseCounter;
 
     @Transactional(readOnly = true)
-    public List<ExpenseResponseDto> findFiltered(
+    public Page<ExpenseResponseDto> findFiltered(
             Long id,
             String description,
             BigDecimal amount,
             String category,
-            LocalDate date
+            LocalDate date,
+            Pageable pageable
     ) {
         return expenseRepository
-                .findAll(ExpenseSpecifications.matchesFilter(id, description, amount, category, date))
-                .stream()
-                .map(expenseMapper::toExpenseResponseDto)
-                .toList();
+                .findAll(ExpenseSpecifications.matchesFilter(id, description, amount, category, date), pageable)
+                .map(expenseMapper::toExpenseResponseDto);
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseResponseDto> getAll() {
-        return expenseRepository.findAll().stream().map(expenseMapper::toExpenseResponseDto).toList();
+    public Page<ExpenseResponseDto> getAll(Pageable pageable) {
+        return expenseRepository.findAll(pageable).map(expenseMapper::toExpenseResponseDto);
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseResponseDto> getBySenderUserId(Long senderUserId) {
-        return expenseRepository.findByWalletOwnerUserId(senderUserId).stream()
-                .map(expenseMapper::toExpenseResponseDto)
-                .toList();
+    public Page<ExpenseResponseDto> getBySenderUserId(Long senderUserId, Pageable pageable) {
+        return expenseRepository.findByWalletOwnerUserId(senderUserId, pageable)
+                .map(expenseMapper::toExpenseResponseDto);
     }
 
     @Transactional(readOnly = true)
@@ -79,17 +77,19 @@ public class ExpenseService {
     ) {
         String normalizedCategoryName = normalize(categoryName);
         ExpenseQueryKey key = new ExpenseQueryKey(walletOwnerUserId, normalizedCategoryName, pageable, useNative);
-        synchronized (expenseFilterCache) {
-            return expenseFilterCache.computeIfAbsent(
-                    key,
-                    k -> (useNative
-                            ? expenseRepository.findAllWithFiltersNative(
-                                    walletOwnerUserId, normalizedCategoryName, pageable)
-                            : expenseRepository.findAllWithFiltersJpql(
-                                    walletOwnerUserId, normalizedCategoryName, pageable)
-                    ).map(expenseMapper::toExpenseResponseDto)
-            );
-        }
+        return expenseFilterCache.getOrCompute(
+                key,
+                () -> (useNative
+                        ? expenseRepository.findAllWithFiltersNative(
+                                walletOwnerUserId, normalizedCategoryName, pageable)
+                        : expenseRepository.findAllWithFiltersJpql(
+                                walletOwnerUserId, normalizedCategoryName, pageable)
+                ).map(expenseMapper::toExpenseResponseDto)
+        );
+    }
+
+    public int getCreatedExpenseCount() {
+        return createdExpenseCounter.get();
     }
 
     @Transactional(readOnly = true)
@@ -126,7 +126,8 @@ public class ExpenseService {
         expense.setTags(new HashSet<>(tags));
 
         Expense saved = expenseRepository.save(expense);
-        invalidateExpenseFilterCache();
+        createdExpenseCounter.increment();
+        expenseFilterCache.invalidate();
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(saved.getId()));
     }
 
@@ -144,7 +145,8 @@ public class ExpenseService {
         expense.setCategory(category);
         expense.setTags(new HashSet<>(tags));
         Expense saved = expenseRepository.save(expense);
-        invalidateExpenseFilterCache();
+        createdExpenseCounter.increment();
+        expenseFilterCache.invalidate();
 
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(saved.getId()));
     }
@@ -166,7 +168,7 @@ public class ExpenseService {
         expense.getTags().addAll(newTags);
 
         expenseRepository.save(expense);
-        invalidateExpenseFilterCache();
+        expenseFilterCache.invalidate();
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
     }
 
@@ -199,20 +201,14 @@ public class ExpenseService {
         }
 
         expenseRepository.save(expense);
-        invalidateExpenseFilterCache();
+        expenseFilterCache.invalidate();
         return expenseMapper.toExpenseResponseDto(findExpenseWithAssociations(id));
     }
 
     @Transactional
     public void delete(Long id) {
         expenseRepository.deleteById(id);
-        invalidateExpenseFilterCache();
-    }
-
-    private void invalidateExpenseFilterCache() {
-        synchronized (expenseFilterCache) {
-            expenseFilterCache.clear();
-        }
+        expenseFilterCache.invalidate();
     }
 
     private static String normalize(String value) {

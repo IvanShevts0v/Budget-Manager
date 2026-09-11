@@ -1,9 +1,15 @@
 import { request, requestVoid } from "./client";
-import type { WalletRequest, WalletResponse } from "./types";
+import { LOOKUP_SIZE, pageQuery, type PageParams } from "./paging";
+import type { PageResponse, WalletRequest, WalletResponse } from "./types";
 
-export function getWallets(userId?: number) {
-  const query = userId != null ? `?userId=${userId}` : "";
-  return request<WalletResponse[]>(`/wallets${query}`);
+export function getWallets(userId?: number, params: PageParams = {}) {
+  return request<PageResponse<WalletResponse>>(
+    `/wallets${pageQuery(params, { userId })}`
+  );
+}
+
+export function getWalletsLookup(userId?: number) {
+  return getWallets(userId, { page: 0, size: LOOKUP_SIZE, sort: "id" });
 }
 
 export function getWallet(id: number) {

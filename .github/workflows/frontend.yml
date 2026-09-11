@@ -1,0 +1,77 @@
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  frontend-deploy:
+    if: github.event_name == 'push'
+
+    needs: frontend-build
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy frontend
+        run: railway up --service ${{ secrets.RAILWAY_FRONTEND_SERVICE }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Healthcheck
+        env:
+          FRONTEND_PUBLIC_URL: ${{ secrets.FRONTEND_PUBLIC_URL }}
+        run: |
+          if [ -z "$FRONTEND_PUBLIC_URL" ]; then
+            echo "FRONTEND_PUBLIC_URL is not set; healthcheck skipped."
+            exit 0
+          fi
+
+          URL="${FRONTEND_PUBLIC_URL%/}/"
+
+          for i in $(seq 1 30); do
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$URL" || true)
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Healthcheck passed: $URL"
+              exit 0
+            fi
+
+            echo "Waiting for frontend to become healthy... attempt $i/30 (HTTP $HTTP_CODE)"
+            sleep 10
+          done
+
+          echo "Healthcheck failed: $URL"
+          exit 1

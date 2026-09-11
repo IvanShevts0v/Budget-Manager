@@ -1,7 +1,8 @@
 package app.budgetmanager.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import app.budgetmanager.config.Paging;
 import app.budgetmanager.dto.ErrorResponseDto;
 import app.budgetmanager.dto.WalletRequestDto;
 import app.budgetmanager.dto.WalletResponseDto;
@@ -46,11 +48,14 @@ public class WalletController {
 
     @GetMapping
     @Operation(summary = "List wallets, optionally filtered by user id")
-    public List<WalletResponseDto> getWallets(@RequestParam(required = false) Long userId) {
+    public Page<WalletResponseDto> getWallets(
+            @RequestParam(required = false) Long userId,
+            @PageableDefault(size = Paging.DEFAULT_SIZE, sort = "id") Pageable pageable
+    ) {
         if (userId != null) {
-            return walletService.getByUserId(userId);
+            return walletService.getByUserId(userId, pageable);
         }
-        return walletService.getAll();
+        return walletService.getAll(pageable);
     }
 
     @GetMapping("/{id}")

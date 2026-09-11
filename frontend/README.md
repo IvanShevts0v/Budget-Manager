@@ -7,6 +7,7 @@ React + TypeScript + Vite client for the Budget Manager REST API (similar to [st
 - **SPA** on React 18 + react-router-dom
 - **CRUD** for users, wallets, categories, tags, expenses
 - **Filtering** via query params (`/expenses`, `/categories/by-name`, `/tags/by-name`, paginated `/expenses/by-wallet-and-category`)
+- **Pagination** on all list endpoints (`page`, `size`, `sort` → Spring `Page`)
 - **Relationships in UI:**
   - **OneToMany:** User → Wallets, Wallet → Expenses, Category → Expenses
   - **ManyToMany:** Expense ↔ Tag (checkboxes + chips)
@@ -33,10 +34,19 @@ Open **http://localhost:5173**
 
 API calls go to `/api/*` and are proxied to `http://localhost:8080` (see `vite.config.ts`).
 
-## Build
+## Docker (production build)
+
+From project root:
 
 ```bash
-cd frontend
+docker compose up --build
+```
+
+Frontend is served at **http://localhost:3000** (nginx proxies `/api` to backend).
+
+## Build only
+
+```bash
 npm run build
 npm run preview
 ```

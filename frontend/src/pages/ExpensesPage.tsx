@@ -7,10 +7,12 @@ import {
   getExpensesPaginated,
   patchExpense,
 } from "../api/expensesApi";
-import { getCategories } from "../api/categoriesApi";
-import { getTags } from "../api/tagsApi";
+import { getCategoriesLookup } from "../api/categoriesApi";
+import { getTagsLookup } from "../api/tagsApi";
+import { PAGE_SIZE } from "../api/paging";
 import type { ExpenseRequest, ExpenseResponse, NamedEntity } from "../api/types";
 import ExpenseModal from "../components/ExpenseModal";
+import PaginationBar from "../components/PaginationBar";
 import { useAppContext } from "../state/AppContext";
 
 export default function ExpensesPage() {
@@ -42,26 +44,29 @@ export default function ExpensesPage() {
           walletOwnerUserId: selectedUserId,
           categoryName: filters.category || undefined,
           page,
-          size: 10,
+          size: PAGE_SIZE,
           sort: "date,desc",
         });
         setExpenses(result.content);
         setTotalPages(result.totalPages);
       } else {
-        const result = await getExpenses({
-          senderUserId: selectedUserId,
-          description: filters.description || undefined,
-          category: filters.category || undefined,
-          date: filters.date || undefined,
-        });
-        let filtered = result;
+        const result = await getExpenses(
+          {
+            senderUserId: selectedUserId,
+            description: filters.description || undefined,
+            category: filters.category || undefined,
+            date: filters.date || undefined,
+          },
+          { page, size: PAGE_SIZE, sort: "date,desc" }
+        );
+        let filtered = result.content;
         if (filters.tagFilter) {
-          filtered = result.filter((expense) =>
+          filtered = result.content.filter((expense) =>
             expense.tags.some((tag) => tag.toLowerCase().includes(filters.tagFilter.toLowerCase()))
           );
         }
         setExpenses(filtered);
-        setTotalPages(1);
+        setTotalPages(result.totalPages);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load expenses");
@@ -69,9 +74,17 @@ export default function ExpensesPage() {
   };
 
   useEffect(() => {
-    getCategories().then(setCategories).catch(() => setCategories([]));
-    getTags().then(setTags).catch(() => setTags([]));
+    getCategoriesLookup()
+      .then((result) => setCategories(result.content))
+      .catch(() => setCategories([]));
+    getTagsLookup()
+      .then((result) => setTags(result.content))
+      .catch(() => setTags([]));
   }, []);
+
+  useEffect(() => {
+    setPage(0);
+  }, [filters, usePagination, selectedUserId]);
 
   useEffect(() => {
     load();
@@ -162,7 +175,7 @@ export default function ExpensesPage() {
           </label>
           <label className="checkbox-row">
             <input type="checkbox" checked={usePagination} onChange={(e) => setUsePagination(e.target.checked)} />
-            Paginated API (`/expenses/by-wallet-and-category`)
+            Paginated JPQL/native cache (`/expenses/by-wallet-and-category`)
           </label>
         </div>
       </section>
@@ -233,24 +246,7 @@ export default function ExpensesPage() {
         </table>
       </div>
 
-      {usePagination && (
-        <div className="pagination">
-          <button type="button" className="secondary-button" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </button>
-          <span>
-            Page {page + 1} / {Math.max(totalPages, 1)}
-          </span>
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={page + 1 >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
 
       <p className="muted helper-text">Available tags: {tags.map((t) => t.name).join(", ") || "none"}</p>
 
