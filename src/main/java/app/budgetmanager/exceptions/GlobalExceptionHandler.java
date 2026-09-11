@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -140,7 +141,7 @@ public class GlobalExceptionHandler {
             Map<String, String> validationErrors
     ) {
         ErrorResponseDto response = new ErrorResponseDto(
-                LocalDateTime.now(),
+                LocalDateTime.now(ZoneOffset.UTC),
                 status.value(),
                 status.getReasonPhrase(),
                 message,

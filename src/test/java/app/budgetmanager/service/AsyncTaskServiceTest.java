@@ -107,7 +107,8 @@ class AsyncTaskServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
         AsyncTask created = storage.create(USER_ID);
 
-        assertThrows(ResponseStatusException.class, () -> service.getById(created.getId(), 2L));
+        String taskId = created.getId();
+        assertThrows(ResponseStatusException.class, () -> service.getById(taskId, 2L));
     }
 
     @Test

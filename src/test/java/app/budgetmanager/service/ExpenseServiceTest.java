@@ -169,8 +169,8 @@ class ExpenseServiceTest {
         when(expenseMapper.toExpenseResponseDto(any(Expense.class)))
                 .thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
 
-        assertThrows(ResponseStatusException.class,
-                () -> expenseService.createBulk(List.of(valid, invalid)));
+        List<ExpenseRequestDto> requests = List.of(valid, invalid);
+        assertThrows(ResponseStatusException.class, () -> expenseService.createBulk(requests));
 
         verify(expenseRepository, times(1)).save(any(Expense.class));
     }
