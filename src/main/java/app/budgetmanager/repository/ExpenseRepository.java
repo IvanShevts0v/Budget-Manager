@@ -48,7 +48,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     @Query("SELECT DISTINCT e FROM Expense e JOIN e.tags t WHERE t.id = :tagId")
     List<Expense> findByTagId(@Param("tagId") Long tagId);
 
-    // Один SELECT: JOIN Tag + listagg, без подзапроса. GROUP BY — одна строка на Expense.
     @Query(
             value = """
                     SELECT e.id AS id,
