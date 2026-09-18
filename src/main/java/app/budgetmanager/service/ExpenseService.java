@@ -84,7 +84,7 @@ public class ExpenseService {
                                 walletOwnerUserId, normalizedCategoryName, pageable)
                         : expenseRepository.findAllWithFiltersJpql(
                                 walletOwnerUserId, normalizedCategoryName, pageable)
-                ).map(expenseMapper::toExpenseResponseDto)
+                ).map(expenseMapper::fromFilterView)
         );
     }
 
