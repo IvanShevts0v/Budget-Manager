@@ -31,6 +31,7 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+  default-flat-param-object: true
 
 management:
   endpoints:

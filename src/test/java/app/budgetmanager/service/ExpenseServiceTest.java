@@ -1,11 +1,13 @@
 package app.budgetmanager.service;
 
 import app.budgetmanager.cache.ExpenseFilterCache;
+import app.budgetmanager.dto.ExpenseFilterView;
 import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.mapper.ExpenseMapper;
 import app.budgetmanager.model.entity.Category;
 import app.budgetmanager.model.entity.Expense;
+import app.budgetmanager.model.entity.Tag;
 import app.budgetmanager.model.entity.User;
 import app.budgetmanager.model.entity.Wallet;
 import app.budgetmanager.repository.CategoryRepository;
@@ -18,6 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -77,7 +84,7 @@ class ExpenseServiceTest {
         );
     }
 
-    @Test
+    @Test // успешное создание и ответ
     void createShouldSaveAndReturnExpense() {
         ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
         Wallet wallet = wallet(WALLET_ID);
@@ -100,7 +107,7 @@ class ExpenseServiceTest {
         verify(expenseMapper).toExpenseResponseDto(saved);
     }
 
-    @Test
+    @Test // зависимость не найдена — отказ без записи
     void createShouldThrowWhenWalletNotFound() {
         ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
 
@@ -114,7 +121,7 @@ class ExpenseServiceTest {
         verifyNoMoreInteractions(categoryRepository, tagRepository, expenseMapper);
     }
 
-    @Test
+    @Test // пакетное создание всех элементов
     void createBulkShouldCreateEachExpense() {
         ExpenseRequestDto first = expenseRequest("Coffee", "5.00");
         ExpenseRequestDto second = expenseRequest("Lunch", "12.50");
@@ -147,7 +154,7 @@ class ExpenseServiceTest {
         verify(expenseRepository, times(2)).save(any(Expense.class));
     }
 
-    @Test
+    @Test // ошибка в пакете останавливает остальные
     void createBulkShouldStopOnFirstFailureAndNotSaveSecond() {
         ExpenseRequestDto valid = expenseRequest("Coffee", "5.00");
         ExpenseRequestDto invalid = expenseRequest("Lunch", "12.50");
@@ -175,7 +182,7 @@ class ExpenseServiceTest {
         verify(expenseRepository, times(1)).save(any(Expense.class));
     }
 
-    @Test
+    @Test // пакет без общей транзакции
     void createBulkWithoutTransactionalShouldDelegateToNonTransactionalCreate() {
         ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
         Wallet wallet = wallet(WALLET_ID);
@@ -195,7 +202,7 @@ class ExpenseServiceTest {
         verify(expenseRepository).save(any(Expense.class));
     }
 
-    @Test
+    @Test // нарушение инварианта — отказ без записи
     void createShouldThrowWhenAmountIsNotPositive() {
         ExpenseRequestDto request = expenseRequest("Coffee", "0");
 
@@ -204,6 +211,285 @@ class ExpenseServiceTest {
 
         assertEquals("Incorrect amount", exception.getMessage());
         verify(expenseRepository, never()).save(any());
+    }
+
+    @Test // зависимость категории не найдена
+    void createShouldThrowWhenCategoryNotFound() {
+        ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
+        when(walletRepository.findById(WALLET_ID)).thenReturn(Optional.of(wallet(WALLET_ID)));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> expenseService.create(request));
+        verify(expenseRepository, never()).save(any());
+    }
+
+    @Test // часть связанных меток не найдена
+    void createShouldThrowWhenTagsMissing() {
+        ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
+        request.setTagIds(List.of(1L, 2L));
+        when(walletRepository.findById(WALLET_ID)).thenReturn(Optional.of(wallet(WALLET_ID)));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category(CATEGORY_ID, "Food")));
+        when(tagRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(new Tag(1L, "важно")));
+
+        assertThrows(ResponseStatusException.class, () -> expenseService.create(request));
+        verify(expenseRepository, never()).save(any());
+    }
+
+    @Test // создание с найденными связанными метками
+    void createShouldSaveWhenTagsResolved() {
+        ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
+        request.setTagIds(List.of(1L));
+        Wallet wallet = wallet(WALLET_ID);
+        Category category = category(CATEGORY_ID, "Food");
+        Expense saved = expense(EXPENSE_ID, "Coffee", wallet, category);
+        when(walletRepository.findById(WALLET_ID)).thenReturn(Optional.of(wallet));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+        when(tagRepository.findAllById(List.of(1L))).thenReturn(List.of(new Tag(1L, "важно")));
+        when(expenseRepository.save(any(Expense.class))).thenReturn(saved);
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.of(saved));
+        when(expenseMapper.toExpenseResponseDto(saved)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
+
+        ExpenseResponseDto result = expenseService.create(request);
+
+        assertEquals(EXPENSE_ID, result.getId());
+        verify(tagRepository).findAllById(List.of(1L));
+    }
+
+    @Test // создание вне общей транзакции
+    void createWithoutTransactionalShouldSaveAndReturnExpense() {
+        ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
+        Wallet wallet = wallet(WALLET_ID);
+        Category category = category(CATEGORY_ID, "Food");
+        Expense saved = expense(EXPENSE_ID, "Coffee", wallet, category);
+        when(walletRepository.findById(WALLET_ID)).thenReturn(Optional.of(wallet));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+        when(expenseRepository.save(any(Expense.class))).thenReturn(saved);
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.of(saved));
+        when(expenseMapper.toExpenseResponseDto(saved)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
+
+        ExpenseResponseDto result = expenseService.createWithoutTransactional(request);
+
+        assertEquals(EXPENSE_ID, result.getId());
+        assertEquals(1, createdExpenseCounter.get());
+    }
+
+    @Test // чтение по идентификатору
+    void getByIdShouldReturnMappedExpense() {
+        Expense saved = expense(EXPENSE_ID, "Coffee", wallet(WALLET_ID), category(CATEGORY_ID, "Food"));
+        ExpenseResponseDto response = expenseResponse(EXPENSE_ID, "Coffee");
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.of(saved));
+        when(expenseMapper.toExpenseResponseDto(saved)).thenReturn(response);
+
+        assertEquals(response, expenseService.getById(EXPENSE_ID));
+    }
+
+    @Test // чтение отсутствующей записи
+    void getByIdShouldThrowWhenMissing() {
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> expenseService.getById(EXPENSE_ID));
+    }
+
+    @Test // список без фильтра
+    void getAllShouldMapPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Expense entity = expense(EXPENSE_ID, "Coffee", wallet(WALLET_ID), category(CATEGORY_ID, "Food"));
+        ExpenseResponseDto response = expenseResponse(EXPENSE_ID, "Coffee");
+        when(expenseRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(entity)));
+        when(expenseMapper.toExpenseResponseDto(entity)).thenReturn(response);
+
+        Page<ExpenseResponseDto> result = expenseService.getAll(pageable);
+
+        assertEquals(1, result.getContent().size());
+        assertEquals(response, result.getContent().get(0));
+    }
+
+    @Test // список по владельцу кошелька
+    void getBySenderUserIdShouldMapPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Expense entity = expense(EXPENSE_ID, "Coffee", wallet(WALLET_ID), category(CATEGORY_ID, "Food"));
+        when(expenseRepository.findByWalletOwnerUserId(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(entity)));
+        when(expenseMapper.toExpenseResponseDto(entity)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
+
+        assertEquals(1, expenseService.getBySenderUserId(1L, pageable).getContent().size());
+    }
+
+    @Test // список по спецификации фильтра
+    void findFilteredShouldMapPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Expense entity = expense(EXPENSE_ID, "Coffee", wallet(WALLET_ID), category(CATEGORY_ID, "Food"));
+        when(expenseRepository.findAll(org.mockito.ArgumentMatchers.<Specification<Expense>>any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(entity)));
+        when(expenseMapper.toExpenseResponseDto(entity)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
+
+        Page<ExpenseResponseDto> result = expenseService.findFiltered(
+                EXPENSE_ID, "Coffee", new BigDecimal("5.00"), "Food", LocalDate.of(2026, 5, 27), pageable
+        );
+
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test // сложный фильтр JPQL и повтор из кэша
+    void findByWalletOwnerAndCategoryShouldUseJpqlAndCache() {
+        Pageable pageable = PageRequest.of(0, 10);
+        ExpenseFilterView row = org.mockito.Mockito.mock(ExpenseFilterView.class);
+        ExpenseResponseDto response = expenseResponse(EXPENSE_ID, "Coffee");
+        when(expenseRepository.findAllWithFiltersJpql(1L, "еда", pageable))
+                .thenReturn(new PageImpl<>(List.of(row)));
+        when(expenseMapper.fromFilterView(row)).thenReturn(response);
+
+        Page<ExpenseResponseDto> first = expenseService.findByWalletOwnerAndCategory(1L, " еда ", pageable, false);
+        Page<ExpenseResponseDto> second = expenseService.findByWalletOwnerAndCategory(1L, "еда", pageable, false);
+
+        assertEquals(response, first.getContent().get(0));
+        assertEquals(first, second);
+        verify(expenseRepository).findAllWithFiltersJpql(1L, "еда", pageable);
+    }
+
+    @Test // сложный фильтр native
+    void findByWalletOwnerAndCategoryShouldUseNativeQuery() {
+        Pageable pageable = PageRequest.of(0, 10);
+        ExpenseFilterView row = org.mockito.Mockito.mock(ExpenseFilterView.class);
+        when(expenseRepository.findAllWithFiltersNative(1L, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(row)));
+        when(expenseMapper.fromFilterView(row)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
+
+        Page<ExpenseResponseDto> result = expenseService.findByWalletOwnerAndCategory(1L, "  ", pageable, true);
+
+        assertEquals(1, result.getContent().size());
+        verify(expenseRepository).findAllWithFiltersNative(1L, null, pageable);
+    }
+
+    @Test // чтение счётчика созданных записей
+    void getCreatedExpenseCountShouldReturnCounterValue() {
+        assertEquals(0, expenseService.getCreatedExpenseCount());
+    }
+
+    @Test // полная замена полей
+    void updateShouldReplaceFields() {
+        ExpenseRequestDto request = expenseRequest("Lunch", "12.50");
+        request.setTagIds(List.of());
+        Wallet wallet = wallet(WALLET_ID);
+        Category category = category(CATEGORY_ID, "Food");
+        Expense existing = expense(EXPENSE_ID, "Coffee", wallet, category);
+        ExpenseResponseDto response = expenseResponse(EXPENSE_ID, "Lunch");
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.of(existing));
+        when(walletRepository.findById(WALLET_ID)).thenReturn(Optional.of(wallet));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+        when(expenseRepository.save(existing)).thenReturn(existing);
+        when(expenseMapper.toExpenseResponseDto(existing)).thenReturn(response);
+
+        assertEquals(response, expenseService.update(EXPENSE_ID, request));
+        verify(expenseRepository).save(existing);
+    }
+
+    @Test // замена при некорректной сумме
+    void updateShouldThrowWhenAmountInvalid() {
+        ExpenseRequestDto request = expenseRequest("Lunch", "0");
+
+        assertThrows(IllegalArgumentException.class, () -> expenseService.update(EXPENSE_ID, request));
+        verify(expenseRepository, never()).save(any());
+    }
+
+    @Test // частичное обновление переданных полей
+    void patchShouldUpdateProvidedFields() {
+        ExpenseRequestDto request = new ExpenseRequestDto();
+        request.setDescription("Tea");
+        request.setAmount(new BigDecimal("3.00"));
+        request.setDate(LocalDate.of(2026, 6, 1));
+        request.setWalletId(WALLET_ID);
+        request.setCategoryId(CATEGORY_ID);
+        request.setTagIds(List.of(1L));
+        Wallet wallet = wallet(WALLET_ID);
+        Category category = category(CATEGORY_ID, "Food");
+        Expense existing = expense(EXPENSE_ID, "Coffee", wallet, category);
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.of(existing));
+        when(walletRepository.findById(WALLET_ID)).thenReturn(Optional.of(wallet));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+        when(tagRepository.findAllById(List.of(1L))).thenReturn(List.of(new Tag(1L, "важно")));
+        when(expenseRepository.save(existing)).thenReturn(existing);
+        when(expenseMapper.toExpenseResponseDto(existing)).thenReturn(expenseResponse(EXPENSE_ID, "Tea"));
+
+        ExpenseResponseDto result = expenseService.patch(EXPENSE_ID, request);
+
+        assertEquals("Tea", result.getDescription());
+        assertEquals("Tea", existing.getDescription());
+        verify(expenseRepository).save(existing);
+    }
+
+    @Test // частичное обновление при некорректной сумме
+    void patchShouldThrowWhenAmountInvalid() {
+        ExpenseRequestDto request = new ExpenseRequestDto();
+        request.setAmount(new BigDecimal("-1"));
+        Expense existing = expense(EXPENSE_ID, "Coffee", wallet(WALLET_ID), category(CATEGORY_ID, "Food"));
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalArgumentException.class, () -> expenseService.patch(EXPENSE_ID, request));
+    }
+
+    @Test // удаление и сброс кэша
+    void deleteShouldRemoveRecord() {
+        expenseService.delete(EXPENSE_ID);
+
+        verify(expenseRepository).deleteById(EXPENSE_ID);
+    }
+
+    @Test // отказ при пустой сумме
+    void createShouldThrowWhenAmountMissing() {
+        ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
+        request.setAmount(null);
+
+        assertThrows(IllegalArgumentException.class, () -> expenseService.create(request));
+        verify(expenseRepository, never()).save(any());
+    }
+
+    @Test // отказ при пустом идентификаторе кошелька
+    void createShouldThrowWhenWalletIdMissing() {
+        ExpenseRequestDto request = expenseRequest("Coffee", "5.00");
+        request.setWalletId(null);
+
+        assertThrows(ResponseStatusException.class, () -> expenseService.create(request));
+        verify(walletRepository, never()).findById(anyLong());
+    }
+
+    @Test // замена отсутствующей записи
+    void updateShouldThrowWhenExpenseMissing() {
+        ExpenseRequestDto request = expenseRequest("Lunch", "12.50");
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> expenseService.update(EXPENSE_ID, request));
+        verify(expenseRepository, never()).save(any());
+    }
+
+    @Test // частичное обновление без переданных полей
+    void patchShouldKeepFieldsWhenRequestEmpty() {
+        ExpenseRequestDto request = new ExpenseRequestDto();
+        Wallet wallet = wallet(WALLET_ID);
+        Category category = category(CATEGORY_ID, "Food");
+        Expense existing = expense(EXPENSE_ID, "Coffee", wallet, category);
+        when(expenseRepository.findByIdWithAssociations(EXPENSE_ID)).thenReturn(Optional.of(existing));
+        when(expenseRepository.save(existing)).thenReturn(existing);
+        when(expenseMapper.toExpenseResponseDto(existing)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
+
+        ExpenseResponseDto result = expenseService.patch(EXPENSE_ID, request);
+
+        assertEquals("Coffee", result.getDescription());
+        assertEquals("Coffee", existing.getDescription());
+    }
+
+    @Test // сложный фильтр без имени категории
+    void findByWalletOwnerAndCategoryShouldTreatNullCategoryAsUnfiltered() {
+        Pageable pageable = PageRequest.of(0, 10);
+        ExpenseFilterView row = org.mockito.Mockito.mock(ExpenseFilterView.class);
+        when(expenseRepository.findAllWithFiltersJpql(1L, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(row)));
+        when(expenseMapper.fromFilterView(row)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
+
+        Page<ExpenseResponseDto> result = expenseService.findByWalletOwnerAndCategory(1L, null, pageable, false);
+
+        assertEquals(1, result.getContent().size());
+        verify(expenseRepository).findAllWithFiltersJpql(1L, null, pageable);
     }
 
     private static ExpenseRequestDto expenseRequest(String description, String amount) {

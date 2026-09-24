@@ -24,7 +24,7 @@ class ExpenseFilterCacheTest {
         }
     }
 
-    @Test
+    @Test // повтор по ключу берётся из кэша
     void getOrComputeShouldReuseStoredPage() {
         ExpenseQueryKey key = new ExpenseQueryKey(1L, "Food", PageRequest.of(0, 10), false);
         AtomicInteger loads = new AtomicInteger();
@@ -42,7 +42,7 @@ class ExpenseFilterCacheTest {
         assertEquals(1, loads.get());
     }
 
-    @Test
+    @Test // сброс кэша вне транзакции сразу
     void invalidateWithoutTransactionShouldDropCachedValueImmediately() {
         ExpenseQueryKey key = new ExpenseQueryKey(1L, "Food", PageRequest.of(0, 10), false);
         AtomicInteger loads = new AtomicInteger();

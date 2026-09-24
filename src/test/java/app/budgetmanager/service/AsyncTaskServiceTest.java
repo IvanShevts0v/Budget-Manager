@@ -50,7 +50,7 @@ class AsyncTaskServiceTest {
         service = new AsyncTaskService(storage, mapper, asyncTaskRunner, userRepository);
     }
 
-    @Test
+    @Test // постановка задачи в асинхронный исполнитель
     void startTaskShouldCreateTaskAndExecuteAsync() {
         User user = new User();
         user.setId(USER_ID);
@@ -67,7 +67,7 @@ class AsyncTaskServiceTest {
         verify(asyncTaskRunner).executeTask(result.getTaskId());
     }
 
-    @Test
+    @Test // постановка через CompletableFuture
     void startTaskWithCompletableFutureShouldScheduleTask() {
         User user = new User();
         user.setId(USER_ID);
@@ -84,7 +84,7 @@ class AsyncTaskServiceTest {
         verify(asyncTaskRunner).executeTaskFuture(result.getTaskId());
     }
 
-    @Test
+    @Test // доступ владельца к своей задаче
     void getByIdShouldReturnTaskForSameUser() {
         User user = new User();
         user.setId(USER_ID);
@@ -100,7 +100,7 @@ class AsyncTaskServiceTest {
         assertEquals(TaskStatus.IN_PROGRESS, result.getTaskStatus());
     }
 
-    @Test
+    @Test // отказ в доступе чужому владельцу
     void getByIdShouldThrowForbiddenForDifferentUser() {
         User user = new User();
         user.setId(2L);
@@ -111,7 +111,7 @@ class AsyncTaskServiceTest {
         assertThrows(ResponseStatusException.class, () -> service.getById(taskId, 2L));
     }
 
-    @Test
+    @Test // отсутствие задачи
     void getByIdShouldThrowNotFoundWhenTaskMissing() {
         User user = new User();
         user.setId(USER_ID);
@@ -120,7 +120,7 @@ class AsyncTaskServiceTest {
         assertThrows(ResponseStatusException.class, () -> service.getById("missing", USER_ID));
     }
 
-    @Test
+    @Test // старт при несуществующем владельце
     void startTaskShouldThrowWhenUserMissing() {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
@@ -128,5 +128,44 @@ class AsyncTaskServiceTest {
 
         verify(asyncTaskRunner, never()).executeTask(anyString());
         verifyNoMoreInteractions(asyncTaskRunner, mapper);
+    }
+
+    @Test // старт без идентификатора владельца
+    void startTaskShouldThrowWhenUserIdMissing() {
+        assertThrows(ResponseStatusException.class, () -> service.startTask(null));
+        verify(asyncTaskRunner, never()).executeTask(anyString());
+    }
+
+    @Test // чтение без идентификатора владельца
+    void getByIdShouldThrowWhenUserIdMissing() {
+        assertThrows(ResponseStatusException.class, () -> service.getById("task", null));
+        verify(userRepository, never()).findById(any());
+    }
+
+    @Test // постановка через CompletableFuture при отсутствии владельца
+    void startTaskWithCompletableFutureShouldThrowWhenUserMissing() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> service.startTaskWithCompletableFuture(USER_ID));
+        verify(asyncTaskRunner, never()).executeTaskFuture(anyString());
+    }
+
+    @Test // ошибка исполнителя не ломает ответ о постановке
+    void startTaskWithCompletableFutureShouldIgnoreExecutorFailure() {
+        User user = new User();
+        user.setId(USER_ID);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(mapper.toDto(any(AsyncTask.class))).thenAnswer(invocation -> {
+            AsyncTask task = invocation.getArgument(0);
+            return new AsyncTaskResponseDto(task.getId(), task.getUserId(), task.getStatus());
+        });
+        CompletableFuture<Void> failed = new CompletableFuture<>();
+        failed.completeExceptionally(new IllegalStateException("failed"));
+        when(asyncTaskRunner.executeTaskFuture(anyString())).thenReturn(failed);
+
+        AsyncTaskResponseDto result = service.startTaskWithCompletableFuture(USER_ID);
+
+        assertEquals(USER_ID, result.getUserId());
+        verify(asyncTaskRunner).executeTaskFuture(result.getTaskId());
     }
 }

@@ -15,7 +15,7 @@ class RaceConditionTest {
     public static final int THREAD_COUNT = 100;
     public static final int EXPECTED_COUNT = EXECUTIONS * THREAD_COUNT;
 
-    @Test
+    @Test // гонка: атомарный счётчик сохраняет все обновления
     void countersShouldDemonstrateRaceConditionAndAtomicFix() throws InterruptedException {
         AtomicCounter atomicCounter = new AtomicCounter();
         NonAtomicCounter nonAtomicCounter = new NonAtomicCounter();

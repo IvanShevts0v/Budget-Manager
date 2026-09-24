@@ -50,8 +50,13 @@ public class UserService {
         return mapper.toUserResponseDto(savedUser);
     }
 
+    @Transactional
     public void delete(Long id) {
-        repository.deleteById(id);
+        User user = repository.findByIdWithWallets(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.getWallets().forEach(wallet -> wallet.getExpenses().clear());
+        user.getWallets().clear();
+        repository.delete(user);
         expenseFilterCache.invalidate();
     }
 
