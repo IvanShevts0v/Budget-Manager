@@ -23,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
@@ -32,16 +31,14 @@ import jakarta.validation.Valid;
 @RequestMapping("/users")
 @Validated
 @Tag(name = "Users", description = "User registration and management")
-@ApiResponses({
-    @ApiResponse(responseCode = "400", description = "Validation or bad request error",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
-    @ApiResponse(responseCode = "404", description = "Resource not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
-    @ApiResponse(responseCode = "409", description = "Conflict",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class))),
-    @ApiResponse(responseCode = "500", description = "Unexpected server error",
-            content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
-})
+@ApiResponse(responseCode = "400", description = "Validation or bad request error",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+@ApiResponse(responseCode = "404", description = "Resource not found",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+@ApiResponse(responseCode = "409", description = "Conflict",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+@ApiResponse(responseCode = "500", description = "Unexpected server error",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
 public class UserController {
 
     private final UserService service;
