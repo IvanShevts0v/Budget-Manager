@@ -95,6 +95,19 @@ class UserServiceTest {
         verify(repository).save(any(User.class));
     }
 
+    @Test // регистрация без имени кошелька — Default
+    void registerUserShouldUseDefaultWalletWhenNameNull() {
+        UserRequestDto request = new UserRequestDto("ivan", null);
+        when(repository.existsByUsername("ivan")).thenReturn(false);
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mapper.toUserResponseDto(any(User.class)))
+                .thenReturn(new UserResponseDto(1L, "ivan", List.of("Default"), List.of()));
+
+        service.registerUser(request);
+
+        verify(repository).save(any(User.class));
+    }
+
     @Test // регистрация с заданным именем кошелька
     void registerUserShouldUseProvidedWalletName() {
         UserRequestDto request = new UserRequestDto("ivan", " Основной ");
