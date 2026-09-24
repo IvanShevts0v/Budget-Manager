@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -333,7 +334,7 @@ class ExpenseServiceTest {
     @Test // сложный фильтр JPQL и повтор из кэша
     void findByWalletOwnerAndCategoryShouldUseJpqlAndCache() {
         Pageable pageable = PageRequest.of(0, 10);
-        ExpenseFilterView row = org.mockito.Mockito.mock(ExpenseFilterView.class);
+        ExpenseFilterView row = mock(ExpenseFilterView.class);
         ExpenseResponseDto response = expenseResponse(EXPENSE_ID, "Coffee");
         when(expenseRepository.findAllWithFiltersJpql(1L, "еда", pageable))
                 .thenReturn(new PageImpl<>(List.of(row)));
@@ -350,7 +351,7 @@ class ExpenseServiceTest {
     @Test // сложный фильтр native
     void findByWalletOwnerAndCategoryShouldUseNativeQuery() {
         Pageable pageable = PageRequest.of(0, 10);
-        ExpenseFilterView row = org.mockito.Mockito.mock(ExpenseFilterView.class);
+        ExpenseFilterView row = mock(ExpenseFilterView.class);
         when(expenseRepository.findAllWithFiltersNative(1L, null, pageable))
                 .thenReturn(new PageImpl<>(List.of(row)));
         when(expenseMapper.fromFilterView(row)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
@@ -481,7 +482,7 @@ class ExpenseServiceTest {
     @Test // сложный фильтр без имени категории
     void findByWalletOwnerAndCategoryShouldTreatNullCategoryAsUnfiltered() {
         Pageable pageable = PageRequest.of(0, 10);
-        ExpenseFilterView row = org.mockito.Mockito.mock(ExpenseFilterView.class);
+        ExpenseFilterView row = mock(ExpenseFilterView.class);
         when(expenseRepository.findAllWithFiltersJpql(1L, null, pageable))
                 .thenReturn(new PageImpl<>(List.of(row)));
         when(expenseMapper.fromFilterView(row)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));

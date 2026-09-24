@@ -106,7 +106,8 @@ class WalletServiceTest {
     void saveShouldThrowWhenUserMissing() {
         when(userRepository.findById(2L)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> service.save(new WalletRequestDto(2L, "Карта")));
+        WalletRequestDto request = new WalletRequestDto(2L, "Карта");
+        assertThrows(NoSuchElementException.class, () -> service.save(request));
     }
 
     @Test // удаление

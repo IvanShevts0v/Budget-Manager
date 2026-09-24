@@ -55,5 +55,6 @@ public class Expense {
     private Set<Tag> tags = new HashSet<>();
 
     public Expense() {
+        // JPA требует публичный no-arg конструктор для Expense
     }
 }

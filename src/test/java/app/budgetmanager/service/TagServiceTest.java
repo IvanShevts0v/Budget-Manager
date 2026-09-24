@@ -180,6 +180,7 @@ class TagServiceTest {
     void patchShouldThrowWhenMissing() {
         when(tagRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> service.patch(1L, new TagDto("срочно")));
+        TagDto request = new TagDto("срочно");
+        assertThrows(NoSuchElementException.class, () -> service.patch(1L, request));
     }
 }

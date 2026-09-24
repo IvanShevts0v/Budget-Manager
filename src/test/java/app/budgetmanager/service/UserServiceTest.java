@@ -112,8 +112,8 @@ class UserServiceTest {
     void registerUserShouldThrowWhenUsernameExists() {
         when(repository.existsByUsername("ivan")).thenReturn(true);
 
-        assertThrows(ResponseStatusException.class,
-                () -> service.registerUser(new UserRequestDto("ivan", null)));
+        UserRequestDto request = new UserRequestDto("ivan", null);
+        assertThrows(ResponseStatusException.class, () -> service.registerUser(request));
         verify(repository, never()).save(any());
     }
 
@@ -171,8 +171,8 @@ class UserServiceTest {
         when(repository.findById(1L)).thenReturn(Optional.of(user));
         when(repository.existsByUsername("alex")).thenReturn(true);
 
-        assertThrows(ResponseStatusException.class,
-                () -> service.patch(1L, new UserRequestDto("alex", null)));
+        UserRequestDto request = new UserRequestDto("alex", null);
+        assertThrows(ResponseStatusException.class, () -> service.patch(1L, request));
         verify(repository, never()).save(any());
     }
 
@@ -180,7 +180,8 @@ class UserServiceTest {
     void patchShouldThrowWhenUserMissing() {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> service.patch(1L, new UserRequestDto("alex", null)));
+        UserRequestDto request = new UserRequestDto("alex", null);
+        assertThrows(NoSuchElementException.class, () -> service.patch(1L, request));
         verify(repository, never()).save(any());
     }
 

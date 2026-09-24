@@ -40,5 +40,6 @@ public class User {
     private List<Wallet> wallets = new ArrayList<>();
 
     public User() {
+        // JPA требует публичный no-arg конструктор для User
     }
 }

@@ -164,7 +164,8 @@ class CategoryServiceTest {
     void updateShouldThrowWhenMissing() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> service.update(1L, new CategoryRequestDto("кафе")));
+        CategoryRequestDto request = new CategoryRequestDto("кафе");
+        assertThrows(NoSuchElementException.class, () -> service.update(1L, request));
     }
 
     @Test // чтение отсутствующей записи
@@ -185,6 +186,7 @@ class CategoryServiceTest {
     void patchShouldThrowWhenMissing() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> service.patch(1L, new CategoryRequestDto("кафе")));
+        CategoryRequestDto request = new CategoryRequestDto("кафе");
+        assertThrows(NoSuchElementException.class, () -> service.patch(1L, request));
     }
 }
