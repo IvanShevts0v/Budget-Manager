@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -18,8 +20,24 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Test
-        run: mvn -B test
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Test and SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::warning::SONAR_TOKEN is not set. Coverage will not appear in SonarCloud."
+            mvn -B test
+          else
+            mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          fi
 
       - name: Build
         run: mvn -B package -DskipTests

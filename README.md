@@ -142,6 +142,8 @@ npm run dev
 
 - Checkstyle (`checkstyle.xml`), проверяется только `src/main/java` (без сгенерированных MapStruct-реализаций).
 - SonarCloud: https://sonarcloud.io/project/overview?id=IvanShevts0v_Budget-Manager
+  - Coverage приезжает из CI (JaCoCo → `sonar:sonar`). Нужен секрет `SONAR_TOKEN` и в Sonar: **Administration → Analysis Method → CI** (выключить Automatic Analysis).
+  - Пакет сервисов: **Measures → Coverage → `app.budgetmanager.service`**.
 
 ## Настройка и окружение
 
