@@ -1,5 +1,6 @@
 package app.budgetmanager.repository;
 
+import app.budgetmanager.dto.ExpenseSearchCriteria;
 import app.budgetmanager.model.entity.Category;
 import app.budgetmanager.model.entity.Expense;
 import app.budgetmanager.model.entity.Tag;
@@ -23,25 +24,17 @@ public final class ExpenseSpecifications {
     private ExpenseSpecifications() {
     }
 
-    public static Specification<Expense> matchesFilter(
-            Long id,
-            String description,
-            BigDecimal amount,
-            String category,
-            LocalDate date,
-            Long walletOwnerUserId,
-            List<String> tagNames
-    ) {
+    public static Specification<Expense> matchesFilter(ExpenseSearchCriteria criteria) {
         return (Root<Expense> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
             applyDistinct(query);
             List<Predicate> predicates = new ArrayList<>();
-            predicateById(root, cb, id).ifPresent(predicates::add);
-            predicateByDescription(root, cb, description).ifPresent(predicates::add);
-            predicateByAmount(root, cb, amount).ifPresent(predicates::add);
-            predicateByCategoryName(root, cb, category).ifPresent(predicates::add);
-            predicateByDate(root, cb, date).ifPresent(predicates::add);
-            predicateByWalletOwner(root, cb, walletOwnerUserId).ifPresent(predicates::add);
-            predicates.addAll(predicatesByTagNames(root, query, cb, tagNames));
+            predicateById(root, cb, criteria.id()).ifPresent(predicates::add);
+            predicateByDescription(root, cb, criteria.description()).ifPresent(predicates::add);
+            predicateByAmount(root, cb, criteria.amount()).ifPresent(predicates::add);
+            predicateByCategoryName(root, cb, criteria.category()).ifPresent(predicates::add);
+            predicateByDate(root, cb, criteria.date()).ifPresent(predicates::add);
+            predicateByWalletOwner(root, cb, criteria.walletOwnerUserId()).ifPresent(predicates::add);
+            predicates.addAll(predicatesByTagNames(root, query, cb, criteria.tagNames()));
             return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(Predicate[]::new));
         };
     }

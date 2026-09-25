@@ -3,6 +3,7 @@ package app.budgetmanager.service;
 import app.budgetmanager.cache.ExpenseFilterCache;
 import app.budgetmanager.cache.ExpenseQueryKey;
 import app.budgetmanager.dto.ExpenseRequestDto;
+import app.budgetmanager.dto.ExpenseSearchCriteria;
 import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.mapper.ExpenseMapper;
 import app.budgetmanager.model.entity.Category;
@@ -24,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -44,20 +44,9 @@ public class ExpenseService {
     private final AtomicCounter createdExpenseCounter;
 
     @Transactional(readOnly = true)
-    public Page<ExpenseResponseDto> findFiltered(
-            Long id,
-            String description,
-            BigDecimal amount,
-            String category,
-            LocalDate date,
-            Long walletOwnerUserId,
-            List<String> tagNames,
-            Pageable pageable
-    ) {
+    public Page<ExpenseResponseDto> findFiltered(ExpenseSearchCriteria criteria, Pageable pageable) {
         return expenseRepository
-                .findAll(ExpenseSpecifications.matchesFilter(
-                        id, description, amount, category, date, walletOwnerUserId, tagNames
-                ), pageable)
+                .findAll(ExpenseSpecifications.matchesFilter(criteria), pageable)
                 .map(expenseMapper::toExpenseResponseDto);
     }
 

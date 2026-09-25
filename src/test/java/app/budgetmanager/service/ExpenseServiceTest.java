@@ -2,6 +2,7 @@ package app.budgetmanager.service;
 
 import app.budgetmanager.cache.ExpenseFilterCache;
 import app.budgetmanager.dto.ExpenseFilterView;
+import app.budgetmanager.dto.ExpenseSearchCriteria;
 import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.mapper.ExpenseMapper;
@@ -325,7 +326,10 @@ class ExpenseServiceTest {
         when(expenseMapper.toExpenseResponseDto(entity)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
 
         Page<ExpenseResponseDto> result = expenseService.findFiltered(
-                EXPENSE_ID, "Coffee", new BigDecimal("5.00"), "Food", LocalDate.of(2026, 5, 27), 1L, null, pageable
+                new ExpenseSearchCriteria(
+                        EXPENSE_ID, "Coffee", new BigDecimal("5.00"), "Food", LocalDate.of(2026, 5, 27), 1L, null
+                ),
+                pageable
         );
 
         assertEquals(1, result.getTotalElements());

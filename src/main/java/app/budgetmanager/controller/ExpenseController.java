@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import app.budgetmanager.config.Paging;
 import app.budgetmanager.dto.ErrorResponseDto;
 import app.budgetmanager.dto.ExpenseBulkRequestDto;
+import app.budgetmanager.dto.ExpenseSearchCriteria;
 import app.budgetmanager.dto.ExpenseRequestDto;
 import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.service.ExpenseService;
@@ -76,7 +77,10 @@ public class ExpenseController {
                 || (description != null && !description.isBlank())
                 || (category != null && !category.isBlank())
                 || hasTag(tag)) {
-            return service.findFiltered(id, description, amount, category, date, senderUserId, tag, pageable);
+            return service.findFiltered(
+                    new ExpenseSearchCriteria(id, description, amount, category, date, senderUserId, tag),
+                    pageable
+            );
         }
         return service.getAll(pageable);
     }
