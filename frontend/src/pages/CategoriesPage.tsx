@@ -6,37 +6,41 @@ import {
   patchCategory,
   searchCategoriesByName,
 } from "../api/categoriesApi";
-import { PAGE_SIZE } from "../api/paging";
-import type { NamedEntity } from "../api/types";
-import PaginationBar from "../components/PaginationBar";
+import { getExpensesLookup } from "../api/expensesApi";
+import type { ExpenseResponse, NamedEntity } from "../api/types";
+import { ListFooter, SortOrderFields, useListQuery } from "../components/ListControls";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<NamedEntity[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseResponse[]>([]);
   const [name, setName] = useState("");
   const [filterName, setFilterName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
+  const list = useListQuery("id");
   const [totalPages, setTotalPages] = useState(1);
 
   const load = () => {
     const request = filterName.trim()
-      ? searchCategoriesByName(filterName.trim(), { page, size: PAGE_SIZE, sort: "id" })
-      : getCategories({ page, size: PAGE_SIZE, sort: "id" });
+      ? searchCategoriesByName(filterName.trim(), list.query)
+      : getCategories(list.query);
     request
       .then((result) => {
         setCategories(result.content);
         setTotalPages(result.totalPages);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load categories"));
+    getExpensesLookup()
+      .then((result) => setExpenses(result.content))
+      .catch(() => setExpenses([]));
   };
 
   useEffect(() => {
-    setPage(0);
+    list.setPage(0);
   }, [filterName]);
 
-  useEffect(load, [filterName, page]);
+  useEffect(load, [filterName, list.page, list.sort, list.direction, list.size]);
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
@@ -65,19 +69,33 @@ export default function CategoriesPage() {
         <div>
           <p className="eyebrow">Categories</p>
           <h1>Categories</h1>
-          <p className="lead">OneToMany: Category → Expenses</p>
         </div>
       </div>
 
       {error && <div className="alert error">{error}</div>}
 
       <section className="card">
-        <h2>Filter by name</h2>
-        <input
-          value={filterName}
-          onChange={(e) => setFilterName(e.target.value)}
-          placeholder="Exact name search via /categories/by-name"
-        />
+        <h2>Filters</h2>
+        <div className="filters-grid">
+          <label>
+            Name
+            <input
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              placeholder="Exact name"
+            />
+          </label>
+          <SortOrderFields
+            sort={list.sort}
+            direction={list.direction}
+            sortOptions={[
+              { value: "id", label: "ID" },
+              { value: "name", label: "Name" },
+            ]}
+            onSortChange={list.changeSort}
+            onDirectionChange={list.changeDirection}
+          />
+        </div>
       </section>
 
       <section className="card">
@@ -136,7 +154,38 @@ export default function CategoriesPage() {
           </tbody>
         </table>
       </div>
-      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+      <ListFooter
+        page={list.page}
+        totalPages={totalPages}
+        onPageChange={list.setPage}
+        size={list.size}
+        onSizeChange={list.changeSize}
+      />
+
+      <section className="card">
+        <h2>Expenses in these categories</h2>
+        <div className="relation-grid">
+          {categories.map((category) => {
+            const items = expenses.filter((expense) => expense.category === category.name);
+            return (
+              <article key={category.id} className="relation-card">
+                <h3>{category.name}</h3>
+                <p className="muted">{items.length} expenses</p>
+                <ul>
+                  {items.slice(0, 5).map((expense) => (
+                    <li key={expense.id}>
+                      {expense.date}: {expense.description || "Expense"} — {expense.amount.toFixed(2)}
+                      {expense.tags.length > 0 && ` · ${expense.tags.join(", ")}`}
+                    </li>
+                  ))}
+                </ul>
+                {items.length === 0 && <p className="muted">No expenses</p>}
+                {items.length > 5 && <p className="muted">+ {items.length - 5} more</p>}
+              </article>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

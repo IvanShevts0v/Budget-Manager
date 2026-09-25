@@ -2,16 +2,15 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { getExpensesLookup } from "../api/expensesApi";
 import { createWallet, deleteWallet, getWallets, renameWallet } from "../api/walletsApi";
-import { PAGE_SIZE } from "../api/paging";
 import type { ExpenseResponse, WalletResponse } from "../api/types";
 import { useAppContext } from "../state/AppContext";
-import PaginationBar from "../components/PaginationBar";
+import { ListFooter, SortOrderFields, useListQuery } from "../components/ListControls";
 
 export default function WalletsPage() {
   const { selectedUserId } = useAppContext();
   const [wallets, setWallets] = useState<WalletResponse[]>([]);
   const [expenses, setExpenses] = useState<ExpenseResponse[]>([]);
-  const [page, setPage] = useState(0);
+  const list = useListQuery("id");
   const [totalPages, setTotalPages] = useState(1);
   const [newWalletName, setNewWalletName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -23,7 +22,7 @@ export default function WalletsPage() {
       return;
     }
     const [walletPage, expensePage] = await Promise.all([
-      getWallets(selectedUserId, { page, size: PAGE_SIZE, sort: "id" }),
+      getWallets(selectedUserId, list.query),
       getExpensesLookup({ senderUserId: selectedUserId }),
     ]);
     setWallets(walletPage.content);
@@ -33,7 +32,7 @@ export default function WalletsPage() {
 
   useEffect(() => {
     load().catch((err) => setError(err instanceof Error ? err.message : "Failed to load wallets"));
-  }, [selectedUserId, page]);
+  }, [selectedUserId, list.page, list.sort, list.direction, list.size]);
 
   if (selectedUserId == null) {
     return <Navigate to="/" replace />;
@@ -66,7 +65,6 @@ export default function WalletsPage() {
         <div>
           <p className="eyebrow">Wallets</p>
           <h1>Wallets for current user</h1>
-          <p className="lead">OneToMany: Wallet → Expenses</p>
         </div>
       </div>
 
@@ -80,6 +78,23 @@ export default function WalletsPage() {
             Create
           </button>
         </form>
+      </section>
+
+      <section className="card filters-card">
+        <h2>Filters</h2>
+        <div className="filters-grid">
+          <SortOrderFields
+            sort={list.sort}
+            direction={list.direction}
+            sortOptions={[
+              { value: "id", label: "ID" },
+              { value: "name", label: "Name" },
+              { value: "user.username", label: "Owner" },
+            ]}
+            onSortChange={list.changeSort}
+            onDirectionChange={list.changeDirection}
+          />
+        </div>
       </section>
 
       <div className="relation-grid">
@@ -136,7 +151,13 @@ export default function WalletsPage() {
           );
         })}
       </div>
-      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+      <ListFooter
+        page={list.page}
+        totalPages={totalPages}
+        onPageChange={list.setPage}
+        size={list.size}
+        onSizeChange={list.changeSize}
+      />
     </div>
   );
 }

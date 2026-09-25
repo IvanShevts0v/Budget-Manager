@@ -9,16 +9,23 @@ import type {
 } from "./types";
 
 export function getExpenses(filters: ExpenseFilters = {}, params: PageParams = {}) {
-  return request<PageResponse<ExpenseResponse>>(
-    `/expenses${pageQuery(params, {
+  const search = new URLSearchParams(
+    pageQuery(params, {
       senderUserId: filters.senderUserId,
       id: filters.id,
       description: filters.description,
       amount: filters.amount,
       category: filters.category,
       date: filters.date,
-    })}`
+    }).slice(1)
   );
+  filters.tags?.forEach((tag) => {
+    if (tag) {
+      search.append("tag", tag);
+    }
+  });
+  const query = search.toString();
+  return request<PageResponse<ExpenseResponse>>(`/expenses${query ? `?${query}` : ""}`);
 }
 
 export function getExpensesLookup(filters: ExpenseFilters = {}) {

@@ -27,7 +27,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      FRONTEND_PROD_HOST_URL: ${FRONTEND_PROD_HOST_URL:-http://localhost:3000}
+      FRONTEND_PROD_HOST_URL: ${FRONTEND_PROD_HOST_URL:-http://localhost:5173}
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
@@ -37,25 +37,6 @@ services:
       start_period: 30s
     volumes:
       - ./logs:/app/logs
-
-  frontend:
-    build: ./frontend
-    container_name: budget-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    environment:
-      BACKEND_HOST: ${BACKEND_HOST}
-      BACKEND_PORT: ${BACKEND_PORT}
-    restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
 
 volumes:
   postgres_data:

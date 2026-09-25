@@ -151,9 +151,11 @@ select {
 
 .filters-grid {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: 4px;
 }
 
-label {
+label,
+.filter-field {
   display: grid;
   gap: 6px;
   font-size: 14px;
@@ -229,6 +231,50 @@ td {
   cursor: default;
 }
 
+.chip.active {
+  background: #1f6feb;
+  color: #fff;
+}
+
+.multi-select {
+  position: relative;
+}
+
+.multi-select-trigger {
+  background: #fff;
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 400;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.multi-select-menu {
+  background: #fff;
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  display: grid;
+  gap: 4px;
+  left: 0;
+  margin-top: 4px;
+  max-height: 240px;
+  overflow: auto;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  z-index: 20;
+}
+
+.multi-select-option {
+  align-items: center;
+  display: flex;
+  font-weight: 500;
+  gap: 8px;
+}
+
 .chip.large {
   font-size: 14px;
   padding: 8px 12px;
@@ -272,6 +318,23 @@ td {
 .inline-chips {
   display: inline-flex;
   margin-left: 8px;
+}
+
+.page-size-field {
+  margin-left: auto;
+  min-width: 120px;
+}
+
+.list-footer {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.list-footer .pagination {
+  margin-top: 0;
 }
 
 .pagination {

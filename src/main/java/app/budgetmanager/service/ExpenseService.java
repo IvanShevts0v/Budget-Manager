@@ -50,10 +50,14 @@ public class ExpenseService {
             BigDecimal amount,
             String category,
             LocalDate date,
+            Long walletOwnerUserId,
+            List<String> tagNames,
             Pageable pageable
     ) {
         return expenseRepository
-                .findAll(ExpenseSpecifications.matchesFilter(id, description, amount, category, date), pageable)
+                .findAll(ExpenseSpecifications.matchesFilter(
+                        id, description, amount, category, date, walletOwnerUserId, tagNames
+                ), pageable)
                 .map(expenseMapper::toExpenseResponseDto);
     }
 

@@ -118,7 +118,7 @@ export default function ExpenseModal({ open, userId, expense, onClose, onSave }:
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </label>
           <label>
-            Wallet (OneToMany User → Wallet)
+            Wallet
             <select value={walletId} onChange={(e) => setWalletId(Number(e.target.value))} required>
               <option value="" disabled>
                 Select wallet
@@ -131,7 +131,7 @@ export default function ExpenseModal({ open, userId, expense, onClose, onSave }:
             </select>
           </label>
           <label>
-            Category (OneToMany Category → Expense)
+            Category
             <select value={categoryId} onChange={(e) => setCategoryId(Number(e.target.value))} required>
               <option value="" disabled>
                 Select category
@@ -144,7 +144,7 @@ export default function ExpenseModal({ open, userId, expense, onClose, onSave }:
             </select>
           </label>
           <fieldset className="tag-fieldset">
-            <legend>Tags (ManyToMany Expense ↔ Tag)</legend>
+            <legend>Tags</legend>
             <div className="tag-grid">
               {tags.map((tag) => (
                 <label key={tag.id} className="checkbox-chip">

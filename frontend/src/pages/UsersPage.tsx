@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { deleteUser, getUsers } from "../api/usersApi";
-import { PAGE_SIZE } from "../api/paging";
 import type { UserResponse } from "../api/types";
-import PaginationBar from "../components/PaginationBar";
+import { ListFooter, SortOrderFields, useListQuery } from "../components/ListControls";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
+  const list = useListQuery("id");
   const [totalPages, setTotalPages] = useState(1);
 
   const load = () => {
-    getUsers({ page, size: PAGE_SIZE, sort: "id" })
+    getUsers(list.query)
       .then((result) => {
         setUsers(result.content);
         setTotalPages(result.totalPages);
@@ -20,7 +19,7 @@ export default function UsersPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load users"));
   };
 
-  useEffect(load, [page]);
+  useEffect(load, [list.page, list.sort, list.direction, list.size]);
 
   const handleDelete = async (user: UserResponse) => {
     if (!window.confirm(`Delete user ${user.username}? Wallets and expenses will be removed.`)) {
@@ -42,13 +41,28 @@ export default function UsersPage() {
         </Link>
       </div>
       {error && <div className="alert error">{error}</div>}
+      <section className="card filters-card">
+        <h2>Filters</h2>
+        <div className="filters-grid">
+          <SortOrderFields
+            sort={list.sort}
+            direction={list.direction}
+            sortOptions={[
+              { value: "id", label: "ID" },
+              { value: "username", label: "Username" },
+            ]}
+            onSortChange={list.changeSort}
+            onDirectionChange={list.changeDirection}
+          />
+        </div>
+      </section>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
               <th>ID</th>
               <th>Username</th>
-              <th>Wallets (OneToMany)</th>
+              <th>Wallets</th>
               <th></th>
             </tr>
           </thead>
@@ -73,7 +87,13 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
-      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+      <ListFooter
+        page={list.page}
+        totalPages={totalPages}
+        onPageChange={list.setPage}
+        size={list.size}
+        onSizeChange={list.changeSize}
+      />
     </div>
   );
 }

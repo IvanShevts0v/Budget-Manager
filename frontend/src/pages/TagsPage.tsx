@@ -1,8 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createTag, deleteTag, getTags, getTagByName, patchTag } from "../api/tagsApi";
-import { PAGE_SIZE } from "../api/paging";
 import type { NamedEntity } from "../api/types";
-import PaginationBar from "../components/PaginationBar";
+import { ListFooter, SortOrderFields, useListQuery } from "../components/ListControls";
 
 export default function TagsPage() {
   const [tags, setTags] = useState<NamedEntity[]>([]);
@@ -11,7 +10,7 @@ export default function TagsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
+  const list = useListQuery("id");
   const [totalPages, setTotalPages] = useState(1);
 
   const load = () => {
@@ -27,7 +26,7 @@ export default function TagsPage() {
         });
       return;
     }
-    getTags({ page, size: PAGE_SIZE, sort: "id" })
+    getTags(list.query)
       .then((result) => {
         setTags(result.content);
         setTotalPages(result.totalPages);
@@ -36,10 +35,10 @@ export default function TagsPage() {
   };
 
   useEffect(() => {
-    setPage(0);
+    list.setPage(0);
   }, [filterName]);
 
-  useEffect(load, [filterName, page]);
+  useEffect(load, [filterName, list.page, list.sort, list.direction, list.size]);
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
@@ -68,19 +67,33 @@ export default function TagsPage() {
         <div>
           <p className="eyebrow">Tags</p>
           <h1>Tags</h1>
-          <p className="lead">ManyToMany: Expense ↔ Tag (expense_tags)</p>
         </div>
       </div>
 
       {error && <div className="alert error">{error}</div>}
 
       <section className="card">
-        <h2>Filter by exact name</h2>
-        <input
-          value={filterName}
-          onChange={(e) => setFilterName(e.target.value)}
-          placeholder="Search via /tags/by-name"
-        />
+        <h2>Filters</h2>
+        <div className="filters-grid">
+          <label>
+            Name
+            <input
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              placeholder="Exact name"
+            />
+          </label>
+          <SortOrderFields
+            sort={list.sort}
+            direction={list.direction}
+            sortOptions={[
+              { value: "id", label: "ID" },
+              { value: "name", label: "Name" },
+            ]}
+            onSortChange={list.changeSort}
+            onDirectionChange={list.changeDirection}
+          />
+        </div>
       </section>
 
       <section className="card">
@@ -147,7 +160,15 @@ export default function TagsPage() {
           </tbody>
         </table>
       </div>
-      {!filterName.trim() && <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />}
+      {!filterName.trim() && (
+        <ListFooter
+          page={list.page}
+          totalPages={totalPages}
+          onPageChange={list.setPage}
+          size={list.size}
+          onSizeChange={list.changeSize}
+        />
+      )}
     </div>
   );
 }

@@ -67,6 +67,7 @@ export interface ExpenseFilters {
   amount?: number;
   category?: string;
   date?: string;
+  tags?: string[];
 }
 
 export interface PaginatedExpenseFilters {

@@ -1,16 +1,15 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUsers, registerUser } from "../api/usersApi";
-import { PAGE_SIZE } from "../api/paging";
 import type { UserResponse } from "../api/types";
 import { useAppContext } from "../state/AppContext";
-import PaginationBar from "../components/PaginationBar";
+import { ListFooter, SortOrderFields, useListQuery } from "../components/ListControls";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { setSelectedUserId } = useAppContext();
   const [users, setUsers] = useState<UserResponse[]>([]);
-  const [page, setPage] = useState(0);
+  const list = useListQuery("id");
   const [totalPages, setTotalPages] = useState(1);
   const [username, setUsername] = useState("");
   const [walletName, setWalletName] = useState("Default");
@@ -18,13 +17,13 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getUsers({ page, size: PAGE_SIZE, sort: "id" })
+    getUsers(list.query)
       .then((result) => {
         setUsers(result.content);
         setTotalPages(result.totalPages);
       })
       .catch(() => setUsers([]));
-  }, [page]);
+  }, [list.page, list.sort, list.direction, list.size]);
 
   const handleSelect = (user: UserResponse) => {
     setSelectedUserId(user.id);
@@ -74,6 +73,18 @@ export default function HomePage() {
       </section>
       <section className="card">
         <h2>Select existing user</h2>
+        <div className="filters-grid">
+          <SortOrderFields
+            sort={list.sort}
+            direction={list.direction}
+            sortOptions={[
+              { value: "id", label: "ID" },
+              { value: "username", label: "Username" },
+            ]}
+            onSortChange={list.changeSort}
+            onDirectionChange={list.changeDirection}
+          />
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
@@ -100,7 +111,13 @@ export default function HomePage() {
             </tbody>
           </table>
         </div>
-        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+        <ListFooter
+          page={list.page}
+          totalPages={totalPages}
+          onPageChange={list.setPage}
+          size={list.size}
+          onSizeChange={list.changeSize}
+        />
       </section>
     </div>
   );

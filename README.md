@@ -172,13 +172,12 @@ docker compose up --build
 
 | Сервис | URL |
 |--------|-----|
-| Frontend (nginx) | http://localhost:3000 |
 | Backend API | http://localhost:8080 |
 | Swagger | http://localhost:8080/swagger-ui.html |
 | Health | http://localhost:8080/actuator/health |
 
-Compose поднимает **PostgreSQL 16**, **backend** (Dockerfile в корне), **frontend** (nginx + proxy `/api` → backend).  
-Healthcheck: `pg_isready`, `curl /actuator/health`, `curl /` на frontend.
+Compose поднимает **PostgreSQL 16** и **backend** (Dockerfile в корне).  
+Healthcheck: `pg_isready`, `curl /actuator/health`.
 
 ## CI/CD (GitHub Actions)
 

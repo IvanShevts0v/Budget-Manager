@@ -325,7 +325,7 @@ class ExpenseServiceTest {
         when(expenseMapper.toExpenseResponseDto(entity)).thenReturn(expenseResponse(EXPENSE_ID, "Coffee"));
 
         Page<ExpenseResponseDto> result = expenseService.findFiltered(
-                EXPENSE_ID, "Coffee", new BigDecimal("5.00"), "Food", LocalDate.of(2026, 5, 27), pageable
+                EXPENSE_ID, "Coffee", new BigDecimal("5.00"), "Food", LocalDate.of(2026, 5, 27), 1L, null, pageable
         );
 
         assertEquals(1, result.getTotalElements());

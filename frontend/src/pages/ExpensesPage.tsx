@@ -1,18 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   createExpense,
   deleteExpense,
   getExpenses,
-  getExpensesPaginated,
   patchExpense,
 } from "../api/expensesApi";
 import { getCategoriesLookup } from "../api/categoriesApi";
 import { getTagsLookup } from "../api/tagsApi";
-import { PAGE_SIZE } from "../api/paging";
 import type { ExpenseRequest, ExpenseResponse, NamedEntity } from "../api/types";
 import ExpenseModal from "../components/ExpenseModal";
-import PaginationBar from "../components/PaginationBar";
+import { ListFooter, SortOrderFields, useListQuery } from "../components/ListControls";
 import { useAppContext } from "../state/AppContext";
 
 export default function ExpensesPage() {
@@ -23,15 +21,16 @@ export default function ExpensesPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseResponse | null>(null);
-  const [usePagination, setUsePagination] = useState(false);
-  const [page, setPage] = useState(0);
+  const list = useListQuery("date", "desc");
   const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState({
     description: "",
     category: "",
     date: "",
-    tagFilter: "",
+    tags: [] as string[],
   });
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const tagsMenuRef = useRef<HTMLDivElement>(null);
 
   const load = async () => {
     if (selectedUserId == null) {
@@ -39,35 +38,18 @@ export default function ExpensesPage() {
     }
     setError(null);
     try {
-      if (usePagination) {
-        const result = await getExpensesPaginated({
-          walletOwnerUserId: selectedUserId,
-          categoryName: filters.category || undefined,
-          page,
-          size: PAGE_SIZE,
-          sort: "date,desc",
-        });
-        setExpenses(result.content);
-        setTotalPages(result.totalPages);
-      } else {
-        const result = await getExpenses(
-          {
-            senderUserId: selectedUserId,
-            description: filters.description || undefined,
-            category: filters.category || undefined,
-            date: filters.date || undefined,
-          },
-          { page, size: PAGE_SIZE, sort: "date,desc" }
-        );
-        let filtered = result.content;
-        if (filters.tagFilter) {
-          filtered = result.content.filter((expense) =>
-            expense.tags.some((tag) => tag.toLowerCase().includes(filters.tagFilter.toLowerCase()))
-          );
-        }
-        setExpenses(filtered);
-        setTotalPages(result.totalPages);
-      }
+      const result = await getExpenses(
+        {
+          senderUserId: selectedUserId,
+          description: filters.description || undefined,
+          category: filters.category || undefined,
+          date: filters.date || undefined,
+          tags: filters.tags,
+        },
+        list.query
+      );
+      setExpenses(result.content);
+      setTotalPages(result.totalPages);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load expenses");
     }
@@ -83,12 +65,32 @@ export default function ExpensesPage() {
   }, []);
 
   useEffect(() => {
-    setPage(0);
-  }, [filters, usePagination, selectedUserId]);
+    list.setPage(0);
+  }, [filters, selectedUserId]);
+
+  useEffect(() => {
+    if (!tagsOpen) {
+      return;
+    }
+    const close = (event: MouseEvent) => {
+      if (!tagsMenuRef.current?.contains(event.target as Node)) {
+        setTagsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [tagsOpen]);
+
+  const toggleTag = (tag: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag) ? prev.tags.filter((item) => item !== tag) : [...prev.tags, tag],
+    }));
+  };
 
   useEffect(() => {
     load();
-  }, [selectedUserId, filters, usePagination, page]);
+  }, [selectedUserId, filters, list.page, list.sort, list.direction, list.size]);
 
   if (selectedUserId == null) {
     return <Navigate to="/" replace />;
@@ -138,7 +140,6 @@ export default function ExpensesPage() {
             <input
               value={filters.description}
               onChange={(e) => setFilters((prev) => ({ ...prev, description: e.target.value }))}
-              disabled={usePagination}
             />
           </label>
           <label>
@@ -161,22 +162,54 @@ export default function ExpensesPage() {
               type="date"
               value={filters.date}
               onChange={(e) => setFilters((prev) => ({ ...prev, date: e.target.value }))}
-              disabled={usePagination}
             />
           </label>
-          <label>
-            Tag contains
-            <input
-              value={filters.tagFilter}
-              onChange={(e) => setFilters((prev) => ({ ...prev, tagFilter: e.target.value }))}
-              disabled={usePagination}
-              placeholder="client-side filter"
-            />
-          </label>
-          <label className="checkbox-row">
-            <input type="checkbox" checked={usePagination} onChange={(e) => setUsePagination(e.target.checked)} />
-            Paginated JPQL/native cache (`/expenses/by-wallet-and-category`)
-          </label>
+          <div className="filter-field">
+            Tags
+            <div className="multi-select" ref={tagsMenuRef}>
+              <button
+                type="button"
+                className="multi-select-trigger"
+                aria-expanded={tagsOpen}
+                onClick={() => setTagsOpen((open) => !open)}
+              >
+                {filters.tags.length ? filters.tags.join(", ") : "All"}
+              </button>
+              {tagsOpen && (
+                <div className="multi-select-menu">
+                  {tags.length ? (
+                    tags.map((tag) => (
+                      <label key={tag.id} className="multi-select-option">
+                        <input
+                          type="checkbox"
+                          checked={filters.tags.includes(tag.name)}
+                          onChange={() => toggleTag(tag.name)}
+                        />
+                        {tag.name}
+                      </label>
+                    ))
+                  ) : (
+                    <span className="muted">No tags</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <SortOrderFields
+            sort={list.sort}
+            direction={list.direction}
+            sortOptions={[
+              { value: "date", label: "Date" },
+              { value: "amount", label: "Amount" },
+              { value: "description", label: "Description" },
+              { value: "category.name", label: "Category" },
+              { value: "wallet.name", label: "Wallet" },
+              { value: "wallet.user.username", label: "User" },
+              { value: "id", label: "ID" },
+            ]}
+            onSortChange={list.changeSort}
+            onDirectionChange={list.changeDirection}
+          />
         </div>
       </section>
 
@@ -190,9 +223,9 @@ export default function ExpensesPage() {
               <th>Description</th>
               <th>Amount</th>
               <th>Date</th>
-              <th>Wallet (1:N)</th>
-              <th>Category (1:N)</th>
-              <th>Tags (M:N)</th>
+              <th>Wallet</th>
+              <th>Category</th>
+              <th>Tags</th>
               <th></th>
             </tr>
           </thead>
@@ -214,8 +247,8 @@ export default function ExpensesPage() {
                         <button
                           key={tag}
                           type="button"
-                          className="chip"
-                          onClick={() => setFilters((prev) => ({ ...prev, tagFilter: tag }))}
+                          className={filters.tags.includes(tag) ? "chip active" : "chip"}
+                          onClick={() => toggleTag(tag)}
                         >
                           {tag}
                         </button>
@@ -246,9 +279,13 @@ export default function ExpensesPage() {
         </table>
       </div>
 
-      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
-
-      <p className="muted helper-text">Available tags: {tags.map((t) => t.name).join(", ") || "none"}</p>
+      <ListFooter
+        page={list.page}
+        totalPages={totalPages}
+        onPageChange={list.setPage}
+        size={list.size}
+        onSizeChange={list.changeSize}
+      />
 
       <ExpenseModal
         open={modalOpen}

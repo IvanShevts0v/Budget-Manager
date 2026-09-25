@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getExpensesLookup } from "../api/expensesApi";
-import { createWallet, getWalletsLookup } from "../api/walletsApi";
+import { createWallet, getWallets } from "../api/walletsApi";
 import { getUser, updateUser } from "../api/usersApi";
 import type { ExpenseResponse, UserResponse, WalletResponse } from "../api/types";
+import { ListFooter, SortOrderFields, useListQuery } from "../components/ListControls";
 import { useAppContext } from "../state/AppContext";
 
 export default function UserPage() {
@@ -16,22 +17,25 @@ export default function UserPage() {
   const [username, setUsername] = useState("");
   const [newWalletName, setNewWalletName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [walletPages, setWalletPages] = useState(1);
+  const list = useListQuery("id");
 
   const load = async () => {
     const [userData, walletPage, expensePage] = await Promise.all([
       getUser(userId),
-      getWalletsLookup(userId),
+      getWallets(userId, list.query),
       getExpensesLookup({ senderUserId: userId }),
     ]);
     setUser(userData);
     setUsername(userData.username);
     setWallets(walletPage.content);
+    setWalletPages(walletPage.totalPages);
     setExpenses(expensePage.content);
   };
 
   useEffect(() => {
     load().catch((err) => setError(err instanceof Error ? err.message : "Failed to load user"));
-  }, [userId]);
+  }, [userId, list.page, list.sort, list.direction, list.size]);
 
   const handleRename = async (event: FormEvent) => {
     event.preventDefault();
@@ -61,7 +65,6 @@ export default function UserPage() {
         <div>
           <p className="eyebrow">User profile</p>
           <h1>{user.username}</h1>
-          <p className="lead">OneToMany: User → Wallets → Expenses</p>
         </div>
         <button type="button" className="button" onClick={() => setSelectedUserId(user.id)}>
           Use as current user
@@ -79,7 +82,19 @@ export default function UserPage() {
       </section>
 
       <section className="card">
-        <h2>Wallets (OneToMany)</h2>
+        <h2>Wallets</h2>
+        <div className="filters-grid">
+          <SortOrderFields
+            sort={list.sort}
+            direction={list.direction}
+            sortOptions={[
+              { value: "id", label: "ID" },
+              { value: "name", label: "Name" },
+            ]}
+            onSortChange={list.changeSort}
+            onDirectionChange={list.changeDirection}
+          />
+        </div>
         <form className="inline-form" onSubmit={handleCreateWallet}>
           <input
             value={newWalletName}
@@ -118,6 +133,13 @@ export default function UserPage() {
             </article>
           ))}
         </div>
+        <ListFooter
+          page={list.page}
+          totalPages={walletPages}
+          onPageChange={list.setPage}
+          size={list.size}
+          onSizeChange={list.changeSize}
+        />
       </section>
     </div>
   );

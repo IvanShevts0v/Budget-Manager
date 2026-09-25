@@ -28,13 +28,13 @@ import app.budgetmanager.dto.ExpenseResponseDto;
 import app.budgetmanager.service.ExpenseService;
 import app.budgetmanager.validation.ValidationGroups;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -68,14 +68,15 @@ public class ExpenseController {
             @RequestParam(required = false) String category,
             @Parameter(description = "Filter by date (ISO-8601)")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @Parameter(description = "Filter by tag names; expense must have every listed tag")
+            @RequestParam(required = false) List<String> tag,
             @PageableDefault(size = Paging.DEFAULT_SIZE, sort = "id") Pageable pageable
     ) {
-        if (senderUserId != null) {
-            return service.getBySenderUserId(senderUserId, pageable);
-        }
-        if (id != null || (description != null && !description.isEmpty()) || amount != null
-                || (category != null && !category.isEmpty()) || date != null) {
-            return service.findFiltered(id, description, amount, category, date, pageable);
+        if (senderUserId != null || id != null || amount != null || date != null
+                || (description != null && !description.isBlank())
+                || (category != null && !category.isBlank())
+                || hasTag(tag)) {
+            return service.findFiltered(id, description, amount, category, date, senderUserId, tag, pageable);
         }
         return service.getAll(pageable);
     }
@@ -160,5 +161,9 @@ public class ExpenseController {
     @Operation(summary = "Delete expense by id")
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    private static boolean hasTag(List<String> tag) {
+        return tag != null && tag.stream().anyMatch(value -> value != null && !value.isBlank());
     }
 }
